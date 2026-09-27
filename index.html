@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>单词星球 V2.1 · 多清单循环记忆</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root { --bg:#eef2f8; --card:#fff; --primary:#4a7cf7; --accent:#ff9f43; --success:#22c55e; --danger:#ef4444; --text:#1e293b; --text-muted:#7c8aa0; --border:#e5eaf1; }
+body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; background:linear-gradient(160deg,#eef2f8 0%,#e6ecf7 100%); min-height:100vh; color:var(--text); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+#app { max-width:640px; margin:0 auto; padding:16px; min-height:100vh; padding-bottom:40px; }
+button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+button:active { transform:scale(0.97); }
+.app-header { display:flex; justify-content:space-between; align-items:center; padding:4px 4px 12px; }
+.logo { font-size:20px; font-weight:700; color:var(--primary); letter-spacing:0.5px; }
+.icon-btn { font-size:22px; padding:6px 10px; border-radius:12px; }
+.icon-btn:active { background:#e0e8f5; }
+.list-picker { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--card); border-radius:18px; margin-bottom:12px; box-shadow:0 4px 16px rgba(74,124,247,0.06); cursor:pointer; }
+.list-picker:active { background:#f6f9ff; }
+.list-picker-left { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.list-picker-label { font-size:12px; color:var(--text-muted); }
+.list-picker-name { font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.list-picker-right { display:flex; align-items:center; gap:8px; flex-shrink:0; margin-left:8px; }
+.list-picker-progress { font-size:14px; font-weight:700; color:var(--primary); }
+.list-picker-arrow { font-size:14px; color:var(--text-muted); }
+.unit-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.unit-tab { padding:7px 12px; border-radius:12px; background:rgba(255,255,255,0.85); font-size:12px; font-weight:600; color:var(--text-muted); transition:all 0.2s; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.unit-tab.active { background:var(--primary); color:white; }
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.stat-card { background:var(--card); border-radius:16px; padding:14px 8px; text-align:center; box-shadow:0 4px 16px rgba(74,124,247,0.06); }
+.stat-value { font-size:20px; font-weight:700; color:var(--primary); margin-bottom:4px; }
+.stat-label { font-size:12px; color:var(--text-muted); }
+.task-card { background:var(--card); border-radius:20px; padding:22px; margin-bottom:20px; box-shadow:0 4px 20px rgba(74,124,247,0.07); }
+.task-title { font-size:15px; font-weight:700; margin-bottom:16px; }
+.task-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
+.task-item:last-child { border-bottom:none; padding-bottom:0; }
+.task-item:first-of-type { padding-top:0; }
+.task-label { font-size:15px; }
+.task-progress { font-size:15px; font-weight:700; color:var(--primary); }
+.primary-btn { width:100%; padding:18px; background:linear-gradient(135deg,#5b8def 0%,#4a7cf7 100%); color:white; border-radius:18px; font-size:17px; font-weight:700; letter-spacing:1px; box-shadow:0 8px 24px rgba(74,124,247,0.3); transition:all 0.2s; }
+.primary-btn:active { transform:translateY(1px); box-shadow:0 4px 12px rgba(74,124,247,0.3); }
+.primary-btn:disabled { background:#c8d4e6; box-shadow:none; cursor:default; }
+.footer-actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+.footer-actions button { flex:1; min-width:60px; padding:12px 4px; background:rgba(255,255,255,0.7); border-radius:14px; font-size:11px; color:var(--text-muted); }
+.footer-actions button:active { background:#dde6f3; }
+.top-bar { display:flex; justify-content:space-between; align-items:center; padding:4px 4px 16px; }
+.back-btn { font-size:22px; padding:6px 12px; border-radius:12px; }
+.back-btn:active { background:#e0e8f5; }
+.counter { font-size:14px; color:var(--text-muted); font-weight:600; }
+.counter b { color:var(--primary); font-size:16px; }
+.progress-bar { height:6px; background:#dfe7f3; border-radius:3px; overflow:hidden; margin-bottom:20px; }
+.progress-fill { height:100%; background:linear-gradient(90deg,#5b8def,#7aa5ff); border-radius:3px; transition:width 0.4s ease; }
+.learn-card { background:var(--card); border-radius:24px; padding:32px 24px; text-align:center; box-shadow:0 8px 32px rgba(74,124,247,0.1); margin-bottom:16px; }
+.syllables-row { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin-bottom:24px; }
+.syl-chip { padding:14px 20px; border-radius:16px; font-size:28px; font-weight:700; letter-spacing:1px; cursor:pointer; user-select:none; font-family:Georgia,serif; transition:transform 0.15s,box-shadow 0.15s; }
+.syl-chip:active { transform:scale(0.92); }
+.syl-chip.syl-playing { transform:scale(1.15); box-shadow:0 0 0 5px rgba(74,124,247,0.35),0 8px 20px rgba(74,124,247,0.25); }
+.syl-0 { background:#e0edff; color:#2563eb; }
+.syl-1 { background:#ffe4f0; color:#db2777; }
+.syl-2 { background:#dcfce7; color:#16a34a; }
+.syl-3 { background:#fef3c7; color:#d97706; }
+.silent-letter { color:#b8c4d4; text-decoration:line-through; text-decoration-thickness:2px; text-decoration-color:#94a3b8; }
+.ipa-text { font-size:17px; color:var(--text-muted); margin-bottom:18px; font-family:"Lucida Sans Unicode",Arial,sans-serif; }
+.meaning-block { padding:16px; background:#f6f9ff; border-radius:14px; margin-bottom:16px; }
+.meaning-pos { font-size:13px; color:var(--primary); font-weight:700; margin-bottom:6px; }
+.meaning-text { font-size:17px; line-height:1.6; }
+.phrase-block { text-align:left; padding:14px 16px; background:#fff9f0; border-radius:14px; margin-bottom:16px; border-left:4px solid var(--accent); }
+.phrase-block .phrase-title { font-size:12px; color:#b45309; font-weight:700; margin-bottom:8px; }
+.phrase-item { margin-bottom:8px; }
+.phrase-item:last-child { margin-bottom:0; }
+.phrase-en { font-size:15px; color:#92400e; font-weight:600; margin-bottom:2px; line-height:1.4; }
+.phrase-zh { font-size:13px; color:#a16207; line-height:1.4; }
+.audio-row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.audio-btn { padding:12px 18px; border-radius:14px; background:#eef4ff; color:var(--primary); font-size:14px; font-weight:600; }
+.audio-btn:active { background:#d9e5ff; }
+.next-btn { width:100%; padding:18px; background:linear-gradient(135deg,#5b8def 0%,#4a7cf7 100%); color:white; border-radius:18px; font-size:17px; font-weight:700; box-shadow:0 8px 24px rgba(74,124,247,0.3); }
+.assoc-bar { margin-top:16px; padding:10px 14px; background:#f0f7ff; border-radius:12px; font-size:12px; color:#4a7cf7; line-height:1.6; display:flex; flex-direction:column; gap:4px; text-align:left; }
+.assoc-bar b { color:#2563eb; }
+.quiz-card { background:var(--card); border-radius:24px; padding:32px 24px; box-shadow:0 8px 32px rgba(74,124,247,0.1); margin-bottom:16px; }
+.quiz-meaning { text-align:center; margin-bottom:28px; }
+.quiz-pos { font-size:14px; color:var(--primary); font-weight:700; margin-bottom:8px; }
+.quiz-meaning-text { font-size:20px; line-height:1.5; font-weight:600; }
+.hint-row { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-bottom:24px; min-height:56px; align-items:center; }
+.hint-box { display:flex; gap:3px; padding:10px 12px; border-radius:12px; }
+.hint-box.syl-0 { background:#e0edff; }
+.hint-box.syl-1 { background:#ffe4f0; }
+.hint-box.syl-2 { background:#dcfce7; }
+.hint-box.syl-3 { background:#fef3c7; }
+.slot { width:22px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; font-family:Georgia,serif; background:rgba(255,255,255,0.8); }
+.slot.filled { color:inherit; }
+.slot.empty { border-bottom:3px solid rgba(0,0,0,0.15); background:transparent; }
+.quiz-audio { text-align:center; margin-bottom:20px; }
+.big-audio-btn { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#eef4ff; color:var(--primary); border-radius:16px; font-size:15px; font-weight:700; }
+.big-audio-btn:active { background:#d9e5ff; }
+.answer-input { width:100%; padding:18px; font-size:22px; font-family:Georgia,serif; letter-spacing:2px; text-align:center; border:2px solid var(--border); border-radius:16px; outline:none; background:#fafcff; color:var(--text); margin-bottom:16px; }
+.answer-input:focus { border-color:var(--primary); background:white; }
+.check-btn { width:100%; padding:18px; background:linear-gradient(135deg,#5b8def 0%,#4a7cf7 100%); color:white; border-radius:18px; font-size:17px; font-weight:700; box-shadow:0 8px 24px rgba(74,124,247,0.3); }
+.choice-grid { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:16px; }
+.choice-btn { padding:18px; border-radius:16px; background:#f6f9ff; color:var(--text); font-size:16px; font-weight:600; text-align:left; border:2px solid transparent; transition:all 0.15s; line-height:1.5; }
+.choice-btn:active { background:#e0edff; border-color:var(--primary); }
+.feedback-overlay { position:fixed; inset:0; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; padding:24px; animation:fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+.feedback-icon { font-size:72px; margin-bottom:16px; }
+.feedback-text { font-size:24px; font-weight:700; margin-bottom:20px; }
+.feedback-correct .feedback-text { color:var(--success); }
+.feedback-wrong .feedback-text { color:var(--danger); }
+.feedback-word { font-size:32px; font-weight:700; font-family:Georgia,serif; letter-spacing:1px; margin-bottom:16px; }
+.feedback-word .syl { padding:2px 4px; border-radius:8px; }
+.feedback-word .syl-0 { background:#e0edff; color:#2563eb; }
+.feedback-word .syl-1 { background:#ffe4f0; color:#db2777; }
+.feedback-word .syl-2 { background:#dcfce7; color:#16a34a; }
+.feedback-word .syl-3 { background:#fef3c7; color:#d97706; }
+.feedback-ipa { font-size:16px; color:var(--text-muted); margin-bottom:24px; font-family:"Lucida Sans Unicode",Arial,sans-serif; }
+.done-card { background:var(--card); border-radius:24px; padding:48px 24px; text-align:center; box-shadow:0 8px 32px rgba(74,124,247,0.1); }
+.done-emoji { font-size:72px; margin-bottom:20px; }
+.done-title { font-size:26px; font-weight:700; margin-bottom:10px; color:var(--primary); }
+.done-subtitle { font-size:15px; color:var(--text-muted); margin-bottom:32px; line-height:1.6; }
+.done-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:32px; }
+.done-stat { padding:16px 8px; background:#f6f9ff; border-radius:14px; }
+.done-stat-value { font-size:22px; font-weight:700; color:var(--primary); margin-bottom:4px; }
+.done-stat-label { font-size:12px; color:var(--text-muted); }
+.done-actions { display:flex; gap:10px; }
+.done-actions button { flex:1; padding:16px; border-radius:16px; font-size:15px; font-weight:700; }
+.btn-primary { background:linear-gradient(135deg,#5b8def 0%,#4a7cf7 100%); color:white; box-shadow:0 6px 20px rgba(74,124,247,0.3); }
+.btn-secondary { background:#eef4ff; color:var(--primary); }
+.panel-mask { position:fixed; inset:0; background:rgba(20,30,50,0.35); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.2s ease; }
+.panel { background:white; border-radius:24px 24px 0 0; width:100%; max-width:640px; max-height:88vh; overflow-y:auto; padding:24px; animation:slideUp 0.3s ease; }
+@keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+.panel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.panel-title { font-size:19px; font-weight:700; }
+.panel-close { font-size:24px; padding:4px 10px; border-radius:10px; color:var(--text-muted); }
+.setting-group { margin-bottom:24px; }
+.setting-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.setting-label span:first-child { font-size:15px; font-weight:600; }
+.setting-value { font-size:16px; font-weight:700; color:var(--primary); }
+.slider { width:100%; height:8px; border-radius:4px; background:#e5eaf1; outline:none; -webkit-appearance:none; appearance:none; }
+.slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#5b8def,#4a7cf7); cursor:pointer; box-shadow:0 2px 8px rgba(74,124,247,0.4); }
+.mode-buttons { display:flex; gap:8px; }
+.mode-btn { flex:1; padding:14px; border-radius:14px; background:#f1f5fb; font-size:14px; font-weight:600; color:var(--text-muted); border:2px solid transparent; transition:all 0.2s; }
+.mode-btn.active { background:#eef4ff; color:var(--primary); border-color:var(--primary); }
+.switch-row { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:#f6f9ff; border-radius:14px; }
+.switch-label { font-size:14px; font-weight:600; }
+.switch-desc { font-size:12px; color:var(--text-muted); margin-top:4px; line-height:1.5; }
+.switch { position:relative; width:48px; height:28px; background:#cbd5e1; border-radius:14px; transition:background 0.2s; cursor:pointer; flex-shrink:0; }
+.switch.on { background:var(--primary); }
+.switch::after { content:''; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:white; transition:transform 0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.15); }
+.switch.on::after { transform:translateX(20px); }
+.panel-tip { font-size:13px; color:var(--text-muted); line-height:1.6; padding:12px 14px; background:#f6f9ff; border-radius:12px; margin-bottom:20px; }
+.panel-tip code { background:#e0edff; padding:2px 6px; border-radius:4px; font-size:12px; color:#2563eb; }
+.panel-actions { display:flex; gap:10px; }
+.panel-actions button { flex:1; padding:16px; border-radius:16px; font-size:15px; font-weight:700; }
+.stat-big-row { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+.stat-big { padding:20px; background:linear-gradient(135deg,#f6f9ff,#eef4ff); border-radius:18px; text-align:center; }
+.stat-big-value { font-size:28px; font-weight:700; color:var(--primary); margin-bottom:4px; }
+.stat-big-label { font-size:13px; color:var(--text-muted); }
+.stat-list { background:#f6f9ff; border-radius:16px; padding:8px 16px; margin-bottom:12px; }
+.stat-list-item { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #e5eaf1; font-size:14px; }
+.stat-list-item:last-child { border-bottom:none; }
+.stat-list-item b { color:var(--primary); }
+.stat-list-item.highlight { background:#fff7ed; margin:0 -16px; padding:12px 16px; border-radius:8px; }
+.stat-list-item.highlight b { color:#b45309; }
+.list-manage-item { display:flex; justify-content:space-between; align-items:center; padding:14px; border-radius:14px; background:#f8fafd; margin-bottom:10px; border:2px solid transparent; }
+.list-manage-item.active { border-color:var(--primary); background:#eef4ff; }
+.list-manage-left { flex:1; min-width:0; }
+.list-manage-name { font-size:15px; font-weight:700; margin-bottom:4px; }
+.list-manage-meta { font-size:12px; color:var(--text-muted); }
+.list-manage-actions { display:flex; gap:6px; flex-shrink:0; }
+.list-manage-btn { padding:8px 12px; border-radius:10px; font-size:12px; font-weight:700; background:#eef4ff; color:var(--primary); }
+.list-manage-btn.danger { background:#fef2f2; color:var(--danger); }
+.list-manage-btn:active { background:#d9e5ff; }
+.list-manage-btn.danger:active { background:#fee2e2; }
+.import-tabs { display:flex; gap:8px; margin-bottom:16px; }
+.import-tab { flex:1; padding:12px; border-radius:12px; background:#f1f5fb; font-size:14px; font-weight:600; color:var(--text-muted); border:2px solid transparent; }
+.import-tab.active { background:#eef4ff; color:var(--primary); border-color:var(--primary); }
+.import-textarea { width:100%; min-height:160px; padding:14px 16px; border-radius:14px; border:2px solid var(--border); font-size:13px; font-family:"SF Mono",Monaco,Consolas,monospace; outline:none; background:#fafcff; resize:vertical; line-height:1.5; }
+.import-textarea:focus { border-color:var(--primary); background:white; }
+.file-input { display:block; width:100%; padding:16px; border-radius:14px; border:2px dashed var(--border); background:#fafcff; font-size:14px; color:var(--text-muted); text-align:center; cursor:pointer; }
+.file-input:active { border-color:var(--primary); background:#f6f9ff; }
+.editor-search { width:100%; padding:14px 16px; border-radius:14px; border:2px solid var(--border); font-size:15px; font-family:inherit; outline:none; background:#fafcff; margin-bottom:16px; }
+.editor-search:focus { border-color:var(--primary); background:white; }
+.syl-list { max-height:45vh; overflow-y:auto; }
+.syl-item { display:flex; justify-content:space-between; align-items:center; padding:14px; border-radius:14px; background:#f8fafd; margin-bottom:8px; border:2px solid transparent; }
+.syl-item.customized { border-color:#fcd34d; background:#fffbeb; }
+.syl-item-left { flex:1; min-width:0; }
+.syl-item-word { font-size:16px; font-weight:700; margin-bottom:4px; font-family:Georgia,serif; }
+.syl-item-syls { font-size:15px; color:var(--text-muted); word-break:break-word; font-family:Georgia,serif; }
+.syl-item-syls .sep { color:var(--primary); margin:0 2px; font-weight:700; }
+.syl-item-syls .silent-letter { font-weight:inherit; }
+.syl-item-edit { padding:8px 14px; border-radius:10px; background:#eef4ff; color:var(--primary); font-size:13px; font-weight:700; flex-shrink:0; margin-left:8px; }
+.syl-edit-row { display:flex; gap:6px; margin-top:8px; }
+.syl-edit-row input { flex:1; padding:10px 12px; border-radius:10px; border:2px solid var(--border); font-size:14px; font-family:Georgia,serif; outline:none; background:#fafcff; min-width:0; }
+.syl-edit-row input:focus { border-color:var(--primary); background:white; }
+.syl-edit-row button { padding:10px 14px; border-radius:10px; font-size:13px; font-weight:700; background:#eef4ff; color:var(--primary); flex-shrink:0; }
+.syl-edit-row button.save { background:linear-gradient(135deg,#5b8def,#4a7cf7); color:white; }
+.syl-edit-hint { font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5; }
+.syl-silent-hint { font-size:13px; color:#4a7cf7; margin-top:6px; font-family:Georgia,serif; }
+.recalc-btn { width:100%; padding:14px; border-radius:12px; background:#fff7ed; color:#b45309; font-size:14px; font-weight:700; border:2px dashed #fbbf24; margin-bottom:16px; }
+.recalc-btn:active { background:#ffedd5; }
+.import-target-option { display:flex; align-items:flex-start; gap:10px; padding:14px; background:#f6f9ff; border-radius:12px; margin-bottom:8px; cursor:pointer; border:2px solid transparent; transition:all 0.15s; }
+.import-target-option.checked { border-color:var(--primary); background:#eef4ff; }
+.import-target-option.disabled { opacity:0.5; cursor:not-allowed; }
+.import-target-option input[type="radio"] { margin-top:4px; flex-shrink:0; }
+.import-target-option .opt-title { font-weight:700; font-size:14px; margin-bottom:2px; }
+.import-target-option .opt-desc { font-size:12px; color:var(--text-muted); line-height:1.4; }
+.import-target-option .opt-input { margin-top:8px; width:100%; padding:8px 10px; border-radius:8px; border:2px solid var(--border); font-size:14px; outline:none; background:white; }
+.import-target-option .opt-input:focus { border-color:var(--primary); }
+@media (max-width:420px) {
+  .syl-chip { font-size:24px; padding:12px 16px; }
+  .slot { width:18px; height:26px; font-size:17px; }
+  .feedback-word { font-size:26px; }
+  .list-manage-actions { flex-direction:column; }
+  .unit-tab { font-size:11px; padding:6px 10px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script id="vocab-data" type="application/json">
+{
+  "meta": { "total": 115, "source": "上海中考英语考纲词汇", "letter": "A" },
+  "words": [
+{"id":"ability","word":"ability","pos":"n.","meaning":"能力，才能，本领","ipa":"/əˈbɪləti/","syllables":["a","bil","i","ty"],"phrases":[{"text":"have the ability to do sth.","meaning":"具备做某事的能力"}]},
+{"id":"able","word":"able","pos":"adj.","meaning":"能够的；有能力的","ipa":"/ˈeɪbl/","syllables":["a","ble"],"phrases":[{"text":"sb. be able to do sth.","meaning":"某人能够做某事"}]},
+{"id":"about","word":"about","pos":"adv./prep.","meaning":"大约；到处，四处/关于","ipa":"/əˈbaʊt/","syllables":["a","bout"],"phrases":[{"text":"how about doing sth.=what about doing sth.","meaning":"做某事如何"}]},
+{"id":"above","word":"above","pos":"prep./adv.","meaning":"在...上面/（水平）超过，更多，更大","ipa":"/əˈbʌv/","syllables":["a","bove"],"phrases":[{"text":"above all","meaning":"首先，尤其是；最重要的是"}]},
+{"id":"abroad","word":"abroad","pos":"adv.","meaning":"到（在）国外的","ipa":"/əˈbrɔːd/","syllables":["a","broad"],"phrases":[]},
+{"id":"accept","word":"accept","pos":"v.","meaning":"接受，同意","ipa":"/əkˈsept/","syllables":["ac","cept"],"phrases":[]},
+{"id":"accident","word":"accident","pos":"n.","meaning":"事故；意外；偶然的事","ipa":"/ˈæksɪdənt/","syllables":["ac","ci","dent"],"phrases":[{"text":"by accident","meaning":"偶然地"}]},
+{"id":"accurate","word":"accurate","pos":"adj.","meaning":"准确的","ipa":"/ˈækjərət/","syllables":["ac","cu","rate"],"phrases":[]},
+{"id":"ache","word":"ache","pos":"n.","meaning":"（身体某部位）疼；痛/疼痛","ipa":"/eɪk/","syllables":["ache"],"phrases":[]},
+{"id":"achieve","word":"achieve","pos":"v.","meaning":"达到，获得","ipa":"/əˈtʃiːv/","syllables":["a","chieve"],"phrases":[]},
+{"id":"across","word":"across","pos":"prep./adv.","meaning":"横过，穿过","ipa":"/əˈkrɒs/","syllables":["a","cross"],"phrases":[{"text":"come across","meaning":"（偶然）遇见，碰见，发现"}]},
+{"id":"act","word":"act","pos":"v.","meaning":"表演，扮演（角色）；行动","ipa":"/ækt/","syllables":["act"],"phrases":[{"text":"act out","meaning":"表演"}]},
+{"id":"active","word":"active","pos":"adj.","meaning":"积极的；活跃的；充满活力的","ipa":"/ˈæktɪv/","syllables":["ac","tive"],"phrases":[{"text":"live an active life","meaning":"过着积极的生活"},{"text":"keep active and healthy","meaning":"保持活跃健康"},{"text":"take an active part in","meaning":"积极参与"}]},
+{"id":"activity","word":"activity","pos":"n.","meaning":"活动","ipa":"/ækˈtɪvəti/","syllables":["ac","tiv","i","ty"],"phrases":[]},
+{"id":"actor","word":"actor","pos":"n.","meaning":"男演员","ipa":"/ˈæktə(r)/","syllables":["ac","tor"],"phrases":[]},
+{"id":"actress","word":"actress","pos":"n.","meaning":"女演员","ipa":"/ˈæktrəs/","syllables":["ac","tress"],"phrases":[]},
+{"id":"actually","word":"actually","pos":"adv.","meaning":"实际上；现实地；的确；真实地；事实上","ipa":"/ˈæktʃuəli/","syllables":["ac","tu","al","ly"],"phrases":[]},
+{"id":"add","word":"add","pos":"v.","meaning":"添加，增加","ipa":"/æd/","syllables":["add"],"phrases":[{"text":"add..to...","meaning":"把...加到..."}]},
+{"id":"addition","word":"addition","pos":"n.","meaning":"增加","ipa":"/əˈdɪʃn/","syllables":["ad","di","tion"],"phrases":[{"text":"in addition(to)","meaning":"除...以外（还）；另外；此外"}]},
+{"id":"address","word":"address","pos":"n.","meaning":"地址","ipa":"/əˈdres/","syllables":["ad","dress"],"phrases":[]},
+{"id":"adult","word":"adult","pos":"n./adj.","meaning":"成年人/成年的","ipa":"/ˈædʌlt/","syllables":["ad","ult"],"phrases":[]},
+{"id":"advantage","word":"advantage","pos":"n.","meaning":"有利条件；优势；优点","ipa":"/ədˈvɑːntɪdʒ/","syllables":["ad","van","tage"],"phrases":[]},
+{"id":"adventure","word":"adventure","pos":"n.","meaning":"冒险；冒险经历；冒险精神","ipa":"/ədˈventʃə(r)/","syllables":["ad","ven","ture"],"phrases":[]},
+{"id":"advertisement","word":"advertisement","pos":"n.","meaning":"广告；启事","ipa":"/ədˈvɜːtɪsmənt/","syllables":["ad","ver","tise","ment"],"phrases":[]},
+{"id":"advice","word":"advice","pos":"n.","meaning":"忠告，劝告，建议，意见","ipa":"/ədˈvaɪs/","syllables":["ad","vice"],"phrases":[{"text":"take one's advice","meaning":"听从某人劝告"}]},
+{"id":"advise","word":"advise","pos":"v.","meaning":"劝告，忠告，建议","ipa":"/ədˈvaɪz/","syllables":["ad","vise"],"phrases":[]},
+{"id":"affect","word":"affect","pos":"v.","meaning":"影响，使感染","ipa":"/əˈfekt/","syllables":["af","fect"],"phrases":[]},
+{"id":"afford","word":"afford","pos":"v.","meaning":"负担得起；承担得起；抽得出（时间）做某事","ipa":"/əˈfɔːd/","syllables":["af","ford"],"phrases":[]},
+{"id":"afraid","word":"afraid","pos":"adj.","meaning":"害怕的；担心的；畏惧的","ipa":"/əˈfreɪd/","syllables":["a","fraid"],"phrases":[{"text":"be afraid of","meaning":"害怕"}]},
+{"id":"Africa","word":"Africa","pos":"n.","meaning":"非洲","ipa":"/ˈæfrɪkə/","syllables":["Af","ri","ca"],"phrases":[]},
+{"id":"after","word":"after","pos":"prep./adv./conj.","meaning":"在...之后；在...后面/在后；后来/在...以后","ipa":"/ˈɑːftə(r)/","syllables":["af","ter"],"phrases":[{"text":"after all","meaning":"终究；毕竟"}]},
+{"id":"afternoon","word":"afternoon","pos":"n.","meaning":"下午","ipa":"/ˌɑːftəˈnuːn/","syllables":["af","ter","noon"],"phrases":[]},
+{"id":"again","word":"again","pos":"adv.","meaning":"再一次；再，又","ipa":"/əˈɡen/","syllables":["a","gain"],"phrases":[]},
+{"id":"against","word":"against","pos":"prep.","meaning":"对着；反对；与...对阵；与...相反","ipa":"/əˈɡenst/","syllables":["a","gainst"],"phrases":[]},
+{"id":"age","word":"age","pos":"n.","meaning":"年龄；时代","ipa":"/eɪdʒ/","syllables":["age"],"phrases":[{"text":"at the age of","meaning":"在...岁时"}]},
+{"id":"aged","word":"aged","pos":"adj.","meaning":"有...年岁的；上年纪的","ipa":"/eɪdʒd/","syllables":["aged"],"phrases":[]},
+{"id":"ago","word":"ago","pos":"adv.","meaning":"以前","ipa":"/əˈɡəʊ/","syllables":["a","go"],"phrases":[]},
+{"id":"agree","word":"agree","pos":"v.","meaning":"同意；应允；赞成","ipa":"/əˈɡriː/","syllables":["a","gree"],"phrases":[{"text":"agree with sb.","meaning":"同意某人的意见"}]},
+{"id":"ahead","word":"ahead","pos":"adv.","meaning":"在前；向前","ipa":"/əˈhed/","syllables":["a","head"],"phrases":[{"text":"go ahead","meaning":"先走；向前走；去吧；干吧；继续；着手做"}]},
+{"id":"aim","word":"aim","pos":"n./v.","meaning":"目的；目标/打算；瞄准","ipa":"/eɪm/","syllables":["aim"],"phrases":[]},
+{"id":"air","word":"air","pos":"n.","meaning":"空气；大气","ipa":"/eə(r)/","syllables":["air"],"phrases":[]},
+{"id":"airline","word":"airline","pos":"n.","meaning":"航空公司","ipa":"/ˈeəlaɪn/","syllables":["air","line"],"phrases":[]},
+{"id":"airport","word":"airport","pos":"n.","meaning":"机场","ipa":"/ˈeəpɔːt/","syllables":["air","port"],"phrases":[]},
+{"id":"alarm","word":"alarm","pos":"n.","meaning":"警报；警报器；闹铃；闹钟","ipa":"/əˈlɑːm/","syllables":["a","larm"],"phrases":[{"text":"alarm clock","meaning":"闹钟"}]},
+{"id":"alive","word":"alive","pos":"adj.","meaning":"活着的；继续存在的","ipa":"/əˈlaɪv/","syllables":["a","live"],"phrases":[]},
+{"id":"all","word":"all","pos":"adj./adv./pron.&n.","meaning":"全（部）；总；整/全部地/全部；全体人员","ipa":"/ɔːl/","syllables":["all"],"phrases":[{"text":"all over","meaning":"到处"},{"text":"all right","meaning":"行了；好吧；（病）好了"},{"text":"in all","meaning":"总共"},{"text":"not..at all","meaning":"一点也不，根本不"}]},
+{"id":"allow","word":"allow","pos":"v.","meaning":"允许，准许","ipa":"/əˈlaʊ/","syllables":["al","low"],"phrases":[]},
+{"id":"almost","word":"almost","pos":"adv.","meaning":"几乎，差不多","ipa":"/ˈɔːlməʊst/","syllables":["al","most"],"phrases":[]},
+{"id":"alone","word":"alone","pos":"adj./adv.","meaning":"单独的/单独地，独自","ipa":"/əˈləʊn/","syllables":["a","lone"],"phrases":[]},
+{"id":"along","word":"along","pos":"prep./adv.","meaning":"沿着；顺着/向前；和...一起；一同","ipa":"/əˈlɒŋ/","syllables":["a","long"],"phrases":[{"text":"get along with","meaning":"和睦相处；关系良好"}]},
+{"id":"already","word":"already","pos":"adv.","meaning":"已经","ipa":"/ɔːlˈredi/","syllables":["al","read","y"],"phrases":[]},
+{"id":"also","word":"also","pos":"adv.","meaning":"也","ipa":"/ˈɔːlsəʊ/","syllables":["al","so"],"phrases":[]},
+{"id":"although","word":"although","pos":"conj.","meaning":"虽然，尽管","ipa":"/ɔːlˈðəʊ/","syllables":["al","though"],"phrases":[]},
+{"id":"altogether","word":"altogether","pos":"adv.","meaning":"总共；全部地","ipa":"/ˌɔːltəˈɡeðə(r)/","syllables":["al","to","geth","er"],"phrases":[]},
+{"id":"always","word":"always","pos":"adv.","meaning":"总是；一直；永远","ipa":"/ˈɔːlweɪz/","syllables":["al","ways"],"phrases":[]},
+{"id":"a.m.","word":"a.m.","pos":"abbr.","meaning":"上午","ipa":"/ˌeɪ ˈem/","syllables":["a.m."],"phrases":[]},
+{"id":"amazing","word":"amazing","pos":"adj.","meaning":"令人惊讶的；令人赞叹的","ipa":"/əˈmeɪzɪŋ/","syllables":["a","maz","ing"],"phrases":[]},
+{"id":"ambition","word":"ambition","pos":"n.","meaning":"野心；雄心","ipa":"/æmˈbɪʃn/","syllables":["am","bi","tion"],"phrases":[]},
+{"id":"America","word":"America","pos":"n.","meaning":"美国；美洲","ipa":"/əˈmerɪkə/","syllables":["A","mer","i","ca"],"phrases":[]},
+{"id":"American","word":"American","pos":"adj./n.","meaning":"美国的；美洲的/美国人","ipa":"/əˈmerɪkən/","syllables":["A","mer","i","can"],"phrases":[]},
+{"id":"among","word":"among","pos":"prep.","meaning":"在...中间；在（三个以上）之间","ipa":"/əˈmʌŋ/","syllables":["a","mong"],"phrases":[]},
+{"id":"amount","word":"amount","pos":"n.","meaning":"数量，总数","ipa":"/əˈmaʊnt/","syllables":["a","mount"],"phrases":[]},
+{"id":"amusement","word":"amusement","pos":"n.","meaning":"娱乐；消遣；娱乐活动","ipa":"/əˈmjuːzmənt/","syllables":["a","muse","ment"],"phrases":[{"text":"amusement park","meaning":"游乐园；娱乐公园"}]},
+{"id":"amusing","word":"amusing","pos":"adj.","meaning":"引起乐趣的","ipa":"/əˈmjuːzɪŋ/","syllables":["a","mus","ing"],"phrases":[]},
+{"id":"ancient","word":"ancient","pos":"adj.","meaning":"古代的；古老的","ipa":"/ˈeɪnʃənt/","syllables":["an","cient"],"phrases":[]},
+{"id":"and","word":"and","pos":"conj.","meaning":"和；又；而","ipa":"/ənd/","syllables":["and"],"phrases":[]},
+{"id":"angrily","word":"angrily","pos":"adv.","meaning":"生气地，愤怒地","ipa":"/ˈæŋɡrəli/","syllables":["an","gri","ly"],"phrases":[]},
+{"id":"angry","word":"angry","pos":"adj.","meaning":"生气的，愤怒的","ipa":"/ˈæŋɡri/","syllables":["an","gry"],"phrases":[{"text":"be angry with sb.","meaning":"生某人的气"}]},
+{"id":"animal","word":"animal","pos":"n.","meaning":"动物","ipa":"/ˈænɪml/","syllables":["an","i","mal"],"phrases":[]},
+{"id":"another","word":"another","pos":"adj.&det./pron.","meaning":"再一；另一；别的；不同的/另一个","ipa":"/əˈnʌðə(r)/","syllables":["an","oth","er"],"phrases":[]},
+{"id":"answer","word":"answer","pos":"n./v.","meaning":"回答；答复；答案；回（信）/回答；答复；回（信）","ipa":"/ˈɑːnsə(r)/","syllables":["an","swer"],"phrases":[]},
+{"id":"any","word":"any","pos":"adj./pron.","meaning":"（用于疑问句、否定句、条件句）一些，什么；任何的，任一的/（无论）哪一个；（无论）哪些","ipa":"/ˈeni/","syllables":["an","y"],"phrases":[{"text":"not any longer=no longer","meaning":"不再"}]},
+{"id":"anybody","word":"anybody","pos":"pron.","meaning":"任何人；无论谁；随便哪一个人","ipa":"/ˈenibɒdi/","syllables":["an","y","bod","y"],"phrases":[]},
+{"id":"anything","word":"anything","pos":"pron.","meaning":"什么事（物）；任何事（物）；任何东西","ipa":"/ˈeniθɪŋ/","syllables":["an","y","thing"],"phrases":[]},
+{"id":"anywhere","word":"anywhere","pos":"adv.","meaning":"（在）任何地方","ipa":"/ˈeniweə(r)/","syllables":["an","y","where"],"phrases":[]},
+{"id":"apologize","word":"apologize","pos":"v.","meaning":"道歉","ipa":"/əˈpɒlədʒaɪz/","syllables":["a","pol","o","gize"],"phrases":[{"text":"apologize to sb. for sth.","meaning":"为某事向某人道歉"}]},
+{"id":"appear","word":"appear","pos":"v.","meaning":"出现；显得；看来；似乎","ipa":"/əˈpɪə(r)/","syllables":["ap","pear"],"phrases":[]},
+{"id":"apple","word":"apple","pos":"n.","meaning":"苹果","ipa":"/ˈæpl/","syllables":["ap","ple"],"phrases":[]},
+{"id":"apply","word":"apply","pos":"v.","meaning":"申请；应用","ipa":"/əˈplaɪ/","syllables":["ap","ply"],"phrases":[{"text":"apply for","meaning":"申请；请求"}]},
+{"id":"April","word":"April","pos":"n.","meaning":"四月","ipa":"/ˈeɪprəl/","syllables":["A","pril"],"phrases":[]},
+{"id":"area","word":"area","pos":"n.","meaning":"面积；范围；（地方、城市、国家、世界的）地区，地域","ipa":"/ˈeəriə/","syllables":["ar","e","a"],"phrases":[]},
+{"id":"argue","word":"argue","pos":"v.","meaning":"争吵，争论","ipa":"/ˈɑːɡjuː/","syllables":["ar","gue"],"phrases":[]},
+{"id":"arm","word":"arm","pos":"n.","meaning":"手臂","ipa":"/ɑːm/","syllables":["arm"],"phrases":[]},
+{"id":"army","word":"army","pos":"n.","meaning":"军队","ipa":"/ˈɑːmi/","syllables":["ar","my"],"phrases":[]},
+{"id":"around","word":"around","pos":"adv./prep.","meaning":"在周围；环绕；到处；大约/在...周围","ipa":"/əˈraʊnd/","syllables":["a","round"],"phrases":[]},
+{"id":"arrange","word":"arrange","pos":"v.","meaning":"安排；布置","ipa":"/əˈreɪndʒ/","syllables":["ar","range"],"phrases":[]},
+{"id":"arrival","word":"arrival","pos":"n.","meaning":"到达","ipa":"/əˈraɪvl/","syllables":["ar","riv","al"],"phrases":[]},
+{"id":"arrive","word":"arrive","pos":"v.","meaning":"到达；达到","ipa":"/əˈraɪv/","syllables":["ar","rive"],"phrases":[]},
+{"id":"art","word":"art","pos":"n.","meaning":"艺术","ipa":"/ɑːt/","syllables":["art"],"phrases":[]},
+{"id":"article","word":"article","pos":"n.","meaning":"（报刊上的）文章；论文；报道","ipa":"/ˈɑːtɪkl/","syllables":["ar","ti","cle"],"phrases":[]},
+{"id":"artist","word":"artist","pos":"n.","meaning":"艺术家；画家","ipa":"/ˈɑːtɪst/","syllables":["art","ist"],"phrases":[]},
+{"id":"as","word":"as","pos":"conj./prep./adv.","meaning":"像...一样；如同；因为；当...时候/作为，当作；当...时/同样地","ipa":"/əz/","syllables":["as"],"phrases":[{"text":"as...as","meaning":"像...一样；如同"},{"text":"as long as","meaning":"只要"},{"text":"as soon as","meaning":"一...就"},{"text":"as well","meaning":"也；又"}]},
+{"id":"Asia","word":"Asia","pos":"n.","meaning":"亚洲","ipa":"/ˈeɪʒə/","syllables":["A","sia"],"phrases":[]},
+{"id":"ask","word":"ask","pos":"v.","meaning":"问，询问；请求，要求","ipa":"/ɑːsk/","syllables":["ask"],"phrases":[{"text":"ask for","meaning":"请求；寻求"},{"text":"ask sb. for sth.","meaning":"问某人要某物"}]},
+{"id":"assistant","word":"assistant","pos":"n.","meaning":"助手；助理；店员","ipa":"/əˈsɪstənt/","syllables":["as","sis","tant"],"phrases":[]},
+{"id":"at","word":"at","pos":"prep.","meaning":"在（几点钟）；在（某处）；（表示动作的目标和方向）向，朝","ipa":"/ət/","syllables":["at"],"phrases":[]},
+{"id":"attack","word":"attack","pos":"v./n.","meaning":"进攻，袭击/发作；侵袭","ipa":"/əˈtæk/","syllables":["at","tack"],"phrases":[]},
+{"id":"attend","word":"attend","pos":"v.","meaning":"出席，参加","ipa":"/əˈtend/","syllables":["at","tend"],"phrases":[]},
+{"id":"attention","word":"attention","pos":"n.","meaning":"注意，关注，关心","ipa":"/əˈtenʃn/","syllables":["at","ten","tion"],"phrases":[{"text":"pay attention to","meaning":"注意"}]},
+{"id":"attitude","word":"attitude","pos":"n.","meaning":"态度；看法","ipa":"/ˈætɪtjuːd/","syllables":["at","ti","tude"],"phrases":[]},
+{"id":"attract","word":"attract","pos":"v.","meaning":"吸引；引起...的好感","ipa":"/əˈtrækt/","syllables":["at","tract"],"phrases":[]},
+{"id":"attractive","word":"attractive","pos":"adj.","meaning":"有吸引力的","ipa":"/əˈtræktɪv/","syllables":["at","trac","tive"],"phrases":[]},
+{"id":"audience","word":"audience","pos":"n.","meaning":"观众；听众","ipa":"/ˈɔːdiəns/","syllables":["au","di","ence"],"phrases":[]},
+{"id":"August","word":"August","pos":"n.","meaning":"八月","ipa":"/ˈɔːɡəst/","syllables":["Au","gust"],"phrases":[]},
+{"id":"aunt","word":"aunt","pos":"n.","meaning":"姑；姨；伯母；舅妈；婶","ipa":"/ɑːnt/","syllables":["aunt"],"phrases":[]},
+{"id":"Australia","word":"Australia","pos":"n.","meaning":"澳洲；澳大利亚","ipa":"/ɒˈstreɪliə/","syllables":["Aus","tra","lia"],"phrases":[]},
+{"id":"Australian","word":"Australian","pos":"adj./n.","meaning":"澳洲的；澳大利亚的/澳大利亚人","ipa":"/ɒˈstreɪliən/","syllables":["Aus","tra","lian"],"phrases":[]},
+{"id":"automatic","word":"automatic","pos":"adj.","meaning":"自动的","ipa":"/ˌɔːtəˈmætɪk/","syllables":["au","to","mat","ic"],"phrases":[]},
+{"id":"autumn","word":"autumn","pos":"n.","meaning":"秋天，秋季","ipa":"/ˈɔːtəm/","syllables":["au","tumn"],"phrases":[]},
+{"id":"available","word":"available","pos":"adj.","meaning":"可用的；可得到的","ipa":"/əˈveɪləbl/","syllables":["a","vail","a","ble"],"phrases":[]},
+{"id":"average","word":"average","pos":"adj./n.","meaning":"平均的；普通的/平均数","ipa":"/ˈævərɪdʒ/","syllables":["av","er","age"],"phrases":[{"text":"on average","meaning":"平均；通常"}]},
+{"id":"avoid","word":"avoid","pos":"v.","meaning":"避免；避开；防止","ipa":"/əˈvɔɪd/","syllables":["a","void"],"phrases":[]},
+{"id":"award","word":"award","pos":"n./v.","meaning":"奖品；奖励/授予；颁奖","ipa":"/əˈwɔːd/","syllables":["a","ward"],"phrases":[]},
+{"id":"away","word":"away","pos":"adv.","meaning":"离开；远离","ipa":"/əˈweɪ/","syllables":["a","way"],"phrases":[]},
+{"id":"awful","word":"awful","pos":"adj.","meaning":"可怕的","ipa":"/ˈɔːfl/","syllables":["aw","ful"],"phrases":[]}
+  ]
+}
+</script>
+
+<script>
+/* ============================================================
+   单词星球 V2.1 · 完整版
+   ============================================================ */
+
+const STORAGE_KEY = 'wordplanet_v2';
+const STATE_VERSION = 3;
+const EBBINGHAUS = [1, 3, 7, 15, 30];
+const DEFAULT_SETTINGS = { newPerDay: 10, reviewPerDay: 20, mode: 'normal', globalReview: false };
+
+const VOCAB = JSON.parse(document.getElementById('vocab-data').textContent);
+
+let state = null;
+let screen = 'home';
+let learnQueue = [], learnIndex = 0;
+let quizQueue = [], quizIndex = 0;
+let feedback = null, panel = null;
+let feedbackTimer = null, syllableTimer = null;
+let editingWordId = null, sylSearch = '';
+let importTab = 'file', importFileName = '', importFileContent = null;
+let pendingImport = null;
+let importTargetChoice = 'merge-same';
+let importTargetListId = '';
+let importNewName = '';
+
+function dateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateOffset(days) { const d = new Date(); d.setDate(d.getDate() + days); return dateStr(d); }
+function normalize(s) { return (s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+function wordIdOf(s) { return String(s || '').trim().toLowerCase(); }
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function weekdayCN(d = new Date()) { return ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()]; }
+function uid(prefix) { return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+function autoFixDuplicateUnits() {
+  let totalFixed = 0;
+  state.lists.forEach(list => {
+    // 找出所有"全部"变体：全部、全部词、全部词_xxx、全部词 xxx
+    const variants = list.units.filter(u =>
+      u.name === '全部' ||
+      u.name === '全部词' ||
+      /^全部词[_\s]/.test(u.name)
+    );
+    
+    if (variants.length === 0) return;
+    
+    // 如果只有一个，且已经是"全部词"→ 无需处理（幂等）
+    if (variants.length === 1 && variants[0].name === '全部词') return;
+    
+    // 合并所有变体的 wordIds
+    const mergedIds = new Set();
+    variants.forEach(u => u.wordIds.forEach(id => mergedIds.add(id)));
+    
+    // 保留第一个，改名为"全部词"
+    const keep = variants[0];
+    keep.name = '全部词';
+    keep.wordIds = Array.from(mergedIds);
+    
+    // 删除其他变体
+    const removedIds = variants.slice(1).map(u => u.id);
+    list.units = list.units.filter(u => !removedIds.includes(u.id));
+    
+    // 修复 activeUnitId
+    if (removedIds.includes(state.activeUnitId)) {
+      state.activeUnitId = keep.id;
+    }
+    
+    totalFixed += variants.length - 1;
+  });
+  
+  if (totalFixed > 0) {
+    saveState();
+    console.log(`[单词星球] 合并了 ${totalFixed} 个重复的"全部"变体`);
+  }
+}
+
+/* 自然拼读音节拆分 */
+const SYL_VOWELS = new Set(['a','e','i','o','u']);
+const SYL_VOWEL_TEAMS = new Set(['ai','ay','ea','ee','ei','ey','ie','oa','oe','oo','ou','ow','oy','oi','au','aw','ew','eu','ui','ue','igh','eigh','ough','augh','eau','air','are','ear','eer','eir','oar','oor','ore','our','ire','ure']);
+const SYL_DIGRAPHS = new Set(['sh','ch','th','wh','ph','gh','ck','ng','nk','qu','wr','kn','gn','ps','mb','mn','bt','pn','rh']);
+const SYL_OVERRIDES = {
+  'about':['a','bout'],'above':['a','bove'],'across':['a','cross'],
+  'afraid':['a','fraid'],'again':['a','gain'],'ago':['a','go'],
+  'alive':['a','live'],'alone':['a','lone'],'along':['a','long'],
+  'among':['a','mong'],'around':['a','round'],'away':['a','way'],
+  'because':['be','cause'],'become':['be','come'],'before':['be','fore'],
+  'begin':['be','gin'],'behind':['be','hind'],'below':['be','low'],
+  'beside':['be','side'],'between':['be','tween'],'believe':['be','lieve'],'belong':['be','long'],
+  'apple':['ap','ple'],'bottle':['bot','tle'],'candle':['can','dle'],
+  'little':['lit','tle'],'middle':['mid','dle'],'people':['peo','ple'],
+  'purple':['pur','ple'],'simple':['sim','ple'],'single':['sin','gle'],
+  'table':['ta','ble'],'trouble':['trou','ble'],'double':['dou','ble'],
+  'uncle':['un','cle'],'gentle':['gen','tle'],'possible':['pos','si','ble'],
+  'terrible':['ter','ri','ble'],'vegetable':['veg','e','ta','ble'],
+  'comfortable':['com','fort','a','ble'],'unforgettable':['un','for','get','ta','ble'],
+  'beautiful':['beau','ti','ful'],'business':['busi','ness'],'restaurant':['res','tau','rant'],
+  'teacher':['teach','er'],'father':['fa','ther'],'mother':['moth','er'],
+  'brother':['broth','er'],'sister':['sis','ter'],'weather':['weath','er'],
+  'another':['an','oth','er'],'together':['to','geth','er'],
+  'remember':['re','mem','ber'],'interesting':['in','ter','est','ing'],
+  'different':['dif','fer','ent'],'difficult':['dif','fi','cult'],
+  'important':['im','por','tant'],'exercise':['ex','er','cise'],
+  'yesterday':['yes','ter','day'],'birthday':['birth','day'],
+  'morning':['morn','ing'],'evening':['eve','ning'],
+  'afternoon':['af','ter','noon'],'basketball':['bas','ket','ball'],
+  'football':['foot','ball'],'homework':['home','work'],
+  'newspaper':['news','pa','per'],'supermarket':['su','per','mar','ket'],
+  'grandmother':['grand','moth','er'],'grandfather':['grand','fa','ther'],
+  'library':['li','brar','y'],'favourite':['fa','vour','ite'],
+  'neighbour':['neigh','bour'],'colorful':['col','or','ful'],
+  'October':['Oc','to','ber'],'November':['No','vem','ber'],
+  'December':['De','cem','ber'],'September':['Sep','tem','ber'],
+  'January':['Jan','u','a','ry'],'February':['Feb','ru','a','ry'],'August':['Au','gust']
+};
+
+function findVowelGroups(w) {
+  const groups = []; let i = 0; const n = w.length;
+  while (i < n) {
+    if (SYL_VOWELS.has(w[i])) {
+      let j = i + 1;
+      while (j < n && SYL_VOWELS.has(w[j])) j++;
+      let end = i + 1;
+      for (let len = j - i; len >= 2; len--) {
+        const chunk = w.slice(i, i + len);
+        if (SYL_VOWEL_TEAMS.has(chunk)) { end = i + len; break; }
+      }
+      groups.push({ start: i, end: end });
+      i = end;
+    } else i++;
+  }
+  return groups;
+}
+
+function autoSyllabify(word) {
+  if (!word) return [word];
+  const original = String(word).trim();
+  if (!original) return [original];
+  if (original.includes('.')) return [original];
+  if (original.includes(' ') || original.includes('-')) {
+    const parts = original.split(/[-\s]+/).filter(Boolean);
+    const result = [];
+    parts.forEach(p => result.push(...autoSyllabify(p)));
+    return result.length ? result : [original];
+  }
+  const w = original.toLowerCase();
+  const n = w.length;
+  if (SYL_OVERRIDES[w]) return SYL_OVERRIDES[w].slice();
+  if (n <= 3) return [original];
+  let groups = findVowelGroups(w);
+  if (groups.length >= 2) {
+    const last = groups[groups.length - 1];
+    if (last.end === n && w[last.start] === 'e' && last.end - last.start === 1) {
+      const prev = groups[groups.length - 2];
+      const consBetween = last.start - prev.end;
+      if (consBetween >= 1 && consBetween <= 2) groups.pop();
+    }
+  }
+  if (groups.length <= 1) return [original];
+  const cuts = [];
+  for (let gi = 0; gi < groups.length - 1; gi++) {
+    const a = groups[gi], b = groups[gi + 1];
+    const consStart = a.end, consEnd = b.start;
+    const consCount = consEnd - consStart;
+    if (consCount <= 0) cuts.push(consStart);
+    else if (consCount === 1) cuts.push(consStart);
+    else if (consCount === 2) {
+      const pair = w.slice(consStart, consEnd);
+      if (SYL_DIGRAPHS.has(pair)) cuts.push(consStart);
+      else cuts.push(consStart + 1);
+    } else if (consCount === 3) {
+      const first2 = w.slice(consStart, consStart + 2);
+      const last2 = w.slice(consEnd - 2, consEnd);
+      if (SYL_DIGRAPHS.has(first2)) cuts.push(consStart + 2);
+      else if (SYL_DIGRAPHS.has(last2)) cuts.push(consStart + 1);
+      else cuts.push(consStart + 2);
+    } else cuts.push(consStart + 2);
+  }
+  const result = [];
+  let prev = 0;
+  for (const c of cuts) {
+    if (c > prev) { result.push(original.slice(prev, c)); prev = c; }
+  }
+  if (prev < n) result.push(original.slice(prev));
+  return result.filter(s => s);
+}
+
+/* 不发音字母 */
+const SILENT_LETTERS_MAP = {
+  "know":[0],"knife":[0],"knee":[0],"knock":[0],"knowledge":[0],"knight":[0],"kneel":[0],"knit":[0],"knot":[0],"knob":[0],
+  "write":[0],"wrong":[0],"wrap":[0],"wrist":[0],"wreck":[0],"wrestle":[0],"wrinkle":[0],"wring":[0],"wrath":[0],
+  "gnaw":[0],"gnome":[0],"gnat":[0],"gnash":[0],"psychology":[0],"psalm":[0,3],"pseudo":[0],
+  "climb":[4],"comb":[3],"thumb":[4],"lamb":[3],"bomb":[3],"crumb":[4],"limb":[3],"plumb":[4],"dumb":[3],"numb":[3],"tomb":[3],"womb":[3],
+  "autumn":[5],"column":[5],"hymn":[3],"solemn":[5],"damn":[3],"condemn":[6],
+  "debt":[2],"doubt":[3],"subtle":[2],
+  "sign":[2],"design":[4],"foreign":[5],"reign":[3],"campaign":[6],"sovereign":[7],
+  "who":[0],"whose":[0],"whole":[0],"whom":[0],"answer":[3],"sword":[1],"two":[1],
+  "hour":[0],"honest":[0],"honour":[0],"honor":[0],"heir":[0],"ghost":[1],
+  "listen":[3],"castle":[3],"fasten":[3],"often":[2],"whistle":[4],"glisten":[4],"moisten":[4],"christmas":[4],
+  "night":[2,3],"light":[2,3],"fight":[2,3],"right":[2,3],"sight":[2,3],"tight":[2,3],"might":[2,3],
+  "bright":[3,4],"flight":[3,4],"slight":[3,4],"high":[2,3],"sigh":[2,3],"thigh":[3,4],
+  "weigh":[3,4],"weight":[3,4],"eight":[2,3],"freight":[4,5],
+  "neighbour":[3,4],"neighbor":[3,4],"though":[4,5],"although":[6,7],
+  "through":[5,6],"thorough":[6,7],"straight":[5,6],
+  "caught":[3,4],"taught":[3,4],"daughter":[3,4],"naughty":[3,4],
+  "bought":[3,4],"brought":[4,5],"thought":[4,5],"drought":[4,5],
+  "muscle":[3],"scissors":[1],"scene":[1],"scent":[1],"science":[1],"descend":[3],"crescent":[4],"conscience":[4],
+  "receipt":[5],"cupboard":[2],"wednesday":[2],"handsome":[3],
+  "island":[1],"isle":[1],"half":[2],"calf":[2],"calm":[2],"palm":[2],"salmon":[2],
+  "talk":[2],"walk":[2],"chalk":[3],"stalk":[3],"folk":[2],"yolk":[2],
+  "would":[3],"could":[3],"should":[4],
+  "guess":[1],"guest":[1],"guitar":[1],"guide":[1],"guilty":[1],
+  "tongue":[4,5],"building":[1],"biscuit":[4],
+  "language":[4],"league":[4,5],"colleague":[7,8],"dialogue":[6,7],"catalogue":[7,8],"queue":[1,2,3,4]
+};
+
+function getSilentIndices(word) {
+  const w = String(word || '').toLowerCase();
+  if (SILENT_LETTERS_MAP[w]) return SILENT_LETTERS_MAP[w];
+  const idx = [];
+  if (/^kn/.test(w)) idx.push(0);
+  if (/^wr/.test(w)) idx.push(0);
+  if (/^ps/.test(w)) idx.push(0);
+  if (/^gn/.test(w)) idx.push(0);
+  if (w.length > 2 && /mb$/.test(w)) idx.push(w.length - 1);
+  if (w.length > 2 && /mn$/.test(w)) idx.push(w.length - 1);
+  if (w.length > 2 && /bt$/.test(w)) idx.push(w.length - 2);
+  if (w.length > 2 && /gn$/.test(w)) idx.push(w.length - 2);
+  return idx;
+}
+
+function renderSyllableWithSilent(syl, sylIndex, allSyllables, fullWord) {
+  const silentSet = new Set(getSilentIndices(fullWord));
+  if (silentSet.size === 0) return escapeHtml(syl);
+  let startIdx = 0;
+  for (let i = 0; i < sylIndex; i++) {
+    startIdx += allSyllables[i].replace(/[^a-zA-Z]/g, '').length;
+  }
+  let html = '';
+  let letterCount = 0;
+  for (let i = 0; i < syl.length; i++) {
+    const ch = syl[i];
+    if (/[a-zA-Z]/.test(ch)) {
+      if (silentSet.has(startIdx + letterCount)) {
+        html += '<span class="silent-letter">' + escapeHtml(ch) + '</span>';
+      } else html += escapeHtml(ch);
+      letterCount++;
+    } else html += escapeHtml(ch);
+  }
+  return html;
+}
+
+function renderSilentHint(word) {
+  const idx = getSilentIndices(word);
+  if (!idx.length) return '';
+  const w = String(word).toLowerCase();
+  const silentSet = new Set(idx);
+  const chars = [];
+  for (let i = 0; i < w.length; i++) {
+    const ch = w[i];
+    if (!/[a-zA-Z]/.test(ch)) { chars.push(escapeHtml(ch)); continue; }
+    if (silentSet.has(i)) chars.push('<span class="silent-letter">' + escapeHtml(ch) + '</span>');
+    else chars.push(escapeHtml(ch));
+  }
+  return `<div class="syl-silent-hint">🔇 不发音：${chars.join('')}</div>`;
+}
+
+/* 字段合并 */
+function mergeMeaning(oldVal, newVal) {
+  if (!newVal) return oldVal || '';
+  if (!oldVal) return newVal;
+  const parts = new Set();
+  [oldVal, newVal].forEach(v => {
+    String(v).split(/[;；]/).forEach(p => {
+      const t = p.trim();
+      if (t) parts.add(t);
+    });
+  });
+  return Array.from(parts).join('；');
+}
+function mergePos(oldVal, newVal) {
+  if (!newVal) return oldVal || '';
+  if (!oldVal) return newVal;
+  const parts = new Set();
+  [oldVal, newVal].forEach(v => {
+    String(v).split(/[\/，,、]/).forEach(p => {
+      const t = p.trim();
+      if (t) parts.add(t);
+    });
+  });
+  return Array.from(parts).join('/');
+}
+function mergePhrases(oldList, newList) {
+  const map = new Map();
+  (oldList || []).forEach(p => {
+    if (p && p.text) {
+      const k = String(p.text).trim().toLowerCase();
+      map.set(k, { text: p.text, meaning: p.meaning || '' });
+    }
+  });
+  (newList || []).forEach(p => {
+    if (p && p.text) {
+      const k = String(p.text).trim().toLowerCase();
+      if (!map.has(k)) map.set(k, { text: p.text, meaning: p.meaning || '' });
+      else {
+        const existing = map.get(k);
+        if (p.meaning && !existing.meaning) existing.meaning = p.meaning;
+      }
+    }
+  });
+  return Array.from(map.values());
+}
+
+/* 状态管理 */
+function buildInitialState() {
+  const master = {};
+  const wordIds = [];
+  VOCAB.words.forEach(w => {
+    const id = w.id || wordIdOf(w.word);
+    master[id] = {
+      id, word: w.word,
+      pos: w.pos || '', meaning: w.meaning || '', ipa: w.ipa || '',
+      syllables: Array.isArray(w.syllables) && w.syllables.length ? w.syllables : [w.word],
+      phrases: Array.isArray(w.phrases) ? w.phrases : [],
+      isPhrase: false
+    };
+    wordIds.push(id);
+  });
+  return {
+    version: STATE_VERSION,
+    settings: { ...DEFAULT_SETTINGS },
+    master,
+    lists: [{ id: 'list_exam', name: '中考考纲词汇',
+      units: [{ id: 'unit_exam_all', name: '全部', wordIds }] }],
+    activeListId: 'list_exam',
+    activeUnitId: 'all',
+    words: {}, sessions: {}, customSyllables: {},
+    totalStudyDays: 0, lastStudyDate: null
+  };
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('wordplanet_v1');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.version === STATE_VERSION) return s;
+      return migrateState(s);
+    }
+  } catch (e) { console.warn(e); }
+  return buildInitialState();
+}
+function migrateState(old) {
+  const fresh = buildInitialState();
+  if (!old) return fresh;
+  if (old.words && typeof old.words === 'object') {
+    Object.keys(old.words).forEach(id => {
+      const w = old.words[id];
+      if (w && typeof w === 'object') {
+        fresh.words[id] = {
+          stage: w.stage || 0, nextReview: w.nextReview || null,
+          correct: w.correct || 0, wrong: w.wrong || 0,
+          hint: typeof w.hint === 'number' ? w.hint : 3,
+          learnedAt: w.learnedAt || dateStr(), lastSeen: w.lastSeen || dateStr(),
+          totalEncounters: w.totalEncounters || (w.correct || 0) + (w.wrong || 0)
+        };
+      }
+    });
+  }
+  if (old.customSyllables && typeof old.customSyllables === 'object') {
+    Object.keys(old.customSyllables).forEach(id => {
+      const v = old.customSyllables[id];
+      if (Array.isArray(v) && v.length) fresh.customSyllables[id] = v;
+    });
+  }
+  if (typeof old.totalStudyDays === 'number') fresh.totalStudyDays = old.totalStudyDays;
+  else if (typeof old.streak === 'number') fresh.totalStudyDays = old.streak;
+  if (old.lastStudyDate) fresh.lastStudyDate = old.lastStudyDate;
+  if (old.settings && typeof old.settings === 'object') {
+    if (old.settings.newPerDay) fresh.settings.newPerDay = old.settings.newPerDay;
+    if (old.settings.reviewPerDay) fresh.settings.reviewPerDay = old.settings.reviewPerDay;
+    if (old.settings.mode) fresh.settings.mode = old.settings.mode;
+    if (typeof old.settings.globalReview === 'boolean') fresh.settings.globalReview = old.settings.globalReview;
+  }
+  if (Array.isArray(old.lists) && old.lists.length) {
+    fresh.lists = old.lists;
+    if (old.activeListId) fresh.activeListId = old.activeListId;
+    if (old.activeUnitId) fresh.activeUnitId = old.activeUnitId;
+  }
+  if (old.master && typeof old.master === 'object') {
+    Object.assign(fresh.master, old.master);
+  }
+  return fresh;
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { console.warn(e); }
+}
+
+function getCurrentList() { return state.lists.find(l => l.id === state.activeListId) || state.lists[0]; }
+function getCurrentUnit() {
+  const list = getCurrentList();
+  if (!list) return null;
+  if (state.activeUnitId === 'all') return null;
+  return list.units.find(u => u.id === state.activeUnitId) || null;
+}
+function getCurrentWordIds() {
+  const list = getCurrentList();
+  if (!list) return [];
+  const unit = getCurrentUnit();
+  const ids = unit ? unit.wordIds : list.units.reduce((acc, u) => acc.concat(u.wordIds), []);
+  return Array.from(new Set(ids));
+}
+function getSyllables(wordId) {
+  const word = state.master[wordId];
+  if (!word) return [];
+  const custom = state.customSyllables && state.customSyllables[wordId];
+  if (custom && Array.isArray(custom) && custom.length) return custom;
+  return word.syllables || [word.word];
+}
+function getHintLevel(wordId) { const w = state.words[wordId]; return w && w.hint ? w.hint : 3; }
+function isMastered(wordId) { const w = state.words[wordId]; return w && (w.stage || 0) >= EBBINGHAUS.length; }
+function isLearned(wordId) { return !!state.words[wordId]; }
+function getWordAssociations(wordId) {
+  const result = [];
+  state.lists.forEach(list => {
+    list.units.forEach(unit => {
+      if (unit.wordIds.includes(wordId)) result.push({ listName: list.name, unitName: unit.name });
+    });
+  });
+  return result;
+}
+function getCurrentListAccuracy() {
+  const ids = getCurrentWordIds();
+  let c = 0, t = 0;
+  ids.forEach(id => {
+    const w = state.words[id];
+    if (w) { c += w.correct || 0; t += (w.correct || 0) + (w.wrong || 0); }
+  });
+  return t > 0 ? Math.round(c / t * 100) : 0;
+}
+function getGlobalAccuracy() {
+  let c = 0, t = 0;
+  Object.values(state.words).forEach(w => {
+    c += w.correct || 0;
+    t += (w.correct || 0) + (w.wrong || 0);
+  });
+  return t > 0 ? Math.round(c / t * 100) : 0;
+}
+function sessionKey() { return `${dateStr()}::${state.activeListId}::${state.activeUnitId}`; }
+function ensureSessionFields(s) {
+  if (!Array.isArray(s.newIds)) s.newIds = [];
+  if (!Array.isArray(s.reviewIds)) s.reviewIds = [];
+  if (!Array.isArray(s.learnDone)) s.learnDone = [];
+  if (!Array.isArray(s.quizDone)) s.quizDone = [];
+  if (typeof s.correct !== 'number') s.correct = 0;
+  if (typeof s.total !== 'number') s.total = 0;
+  return s;
+}
+function getTodaySession() {
+  const key = sessionKey();
+  if (!state.sessions[key]) {
+    const { newIds, reviewIds } = buildTodayQueue();
+    state.sessions[key] = {
+      date: dateStr(), listId: state.activeListId, unitId: state.activeUnitId,
+      newIds, reviewIds, correct: 0, total: 0, learnDone: [], quizDone: [], completed: false
+    };
+    saveState();
+  }
+  return ensureSessionFields(state.sessions[key]);
+}
+function buildTodayQueue() {
+  const today = dateStr();
+  const currentIds = getCurrentWordIds();
+  let newLimit = state.settings.newPerDay, reviewLimit = state.settings.reviewPerDay;
+  if (state.settings.mode === 'easy') {
+    newLimit = Math.max(1, Math.ceil(newLimit / 2));
+    reviewLimit = Math.max(1, Math.ceil(reviewLimit / 2));
+  }
+  const newIds = currentIds.filter(id => state.master[id] && !state.words[id]).slice(0, newLimit);
+  const pool = state.settings.globalReview ? Object.keys(state.words) : currentIds.filter(id => state.words[id]);
+  const dueIds = pool
+    .filter(id => { const w = state.words[id]; return w && w.nextReview && w.nextReview <= today; })
+    .sort((a, b) => (state.words[a].nextReview || '').localeCompare(state.words[b].nextReview || ''))
+    .slice(0, reviewLimit);
+  return { newIds, reviewIds: dueIds };
+}
+function resizeQueue(currentIds, doneIds, target, getPoolFn) {
+  const doneSet = new Set(doneIds);
+  const done = currentIds.filter(id => doneSet.has(id));
+  const pending = currentIds.filter(id => !doneSet.has(id));
+  const need = Math.max(0, target - done.length);
+  if (pending.length >= need) return [...done, ...pending.slice(0, need)];
+  const existing = new Set(currentIds);
+  const pool = getPoolFn().filter(id => !existing.has(id));
+  return [...done, ...pending, ...pool.slice(0, need - pending.length)];
+}
+function applyCurrentLimits() {
+  const key = sessionKey();
+  const session = state.sessions[key];
+  if (!session) return;
+  const factor = state.settings.mode === 'easy' ? 0.5 : 1;
+  const targetNew = Math.max(1, Math.ceil(state.settings.newPerDay * factor));
+  const targetReview = Math.max(1, Math.ceil(state.settings.reviewPerDay * factor));
+  const currentIds = getCurrentWordIds();
+  session.newIds = resizeQueue(session.newIds, session.learnDone || [], targetNew,
+    () => currentIds.filter(id => state.master[id] && !state.words[id]));
+  const today = dateStr();
+  const pool = state.settings.globalReview ? Object.keys(state.words) : currentIds.filter(id => state.words[id]);
+  session.reviewIds = resizeQueue(session.reviewIds, session.quizDone || [], targetReview,
+    () => pool
+      .filter(id => state.words[id] && state.words[id].nextReview && state.words[id].nextReview <= today)
+      .sort((a, b) => (state.words[a].nextReview || '').localeCompare(state.words[b].nextReview || '')));
+}
+function updateWordProgress(wordId, correct) {
+  const today = dateStr();
+  let w = state.words[wordId];
+  if (!w) {
+    w = state.words[wordId] = { stage: 0, nextReview: null, correct: 0, wrong: 0, hint: 3, learnedAt: today, lastSeen: today, totalEncounters: 0 };
+  }
+  w.totalEncounters = (w.totalEncounters || 0) + 1;
+  if (correct) {
+    w.correct = (w.correct || 0) + 1;
+    w.stage = Math.min((w.stage || 0) + 1, EBBINGHAUS.length);
+    const days = EBBINGHAUS[Math.min(w.stage - 1, EBBINGHAUS.length - 1)] || 1;
+    w.nextReview = dateOffset(days);
+    w.hint = Math.max(1, (w.hint || 3) - 1);
+  } else {
+    w.wrong = (w.wrong || 0) + 1;
+    w.stage = Math.max(0, (w.stage || 0) - 1);
+    w.nextReview = dateOffset(1);
+    w.hint = 3;
+  }
+  w.lastSeen = today;
+  saveState();
+}
+
+/* 语音 */
+let voices = [];
+function loadVoices() { if (window.speechSynthesis) voices = speechSynthesis.getVoices(); }
+if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text, rate = 0.9) {
+  if (!window.speechSynthesis || !text) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = rate; u.pitch = 1;
+    const v = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) { console.warn(e); }
+}
+function speakWord(wordStr, rate = 0.85) { speak(String(wordStr).replace(/\./g, ' '), rate); }
+function clearSyllableHighlight() { document.querySelectorAll('.syl-chip').forEach(el => el.classList.remove('syl-playing')); }
+function highlightSyllable(index, duration = 500) {
+  const chips = document.querySelectorAll('.syl-chip');
+  if (!chips[index]) return;
+  chips[index].classList.add('syl-playing');
+  setTimeout(() => chips[index].classList.remove('syl-playing'), duration);
+}
+function playSyllableInWord(sylIndex) {
+  if (screen !== 'learn') return;
+  const wordId = learnQueue[learnIndex];
+  if (!wordId) return;
+  const word = state.master[wordId];
+  if (!word) return;
+  const syllables = getSyllables(wordId);
+  if (!syllables.length) return;
+  if (syllableTimer) clearTimeout(syllableTimer);
+  clearSyllableHighlight();
+  speakWord(word.word, 0.75);
+  const letters = word.word.replace(/[^a-zA-Z]/g, '').length;
+  const totalDuration = Math.max(900, letters * 95) / 0.75;
+  const perSyl = totalDuration / syllables.length;
+  syllableTimer = setTimeout(() => { highlightSyllable(sylIndex, Math.max(450, perSyl)); }, Math.max(60, sylIndex * perSyl));
+}
+function playSequentialSyllables() {
+  if (screen !== 'learn') return;
+  const wordId = learnQueue[learnIndex];
+  if (!wordId) return;
+  const word = state.master[wordId];
+  if (!word) return;
+  const syllables = getSyllables(wordId);
+  if (!syllables.length) return;
+  if (syllableTimer) clearTimeout(syllableTimer);
+  clearSyllableHighlight();
+  speakWord(word.word, 0.6);
+  const letters = word.word.replace(/[^a-zA-Z]/g, '').length;
+  const totalDuration = Math.max(1200, letters * 110) / 0.6;
+  const perSyl = totalDuration / syllables.length;
+  syllables.forEach((_, i) => {
+    setTimeout(() => { clearSyllableHighlight(); highlightSyllable(i, Math.max(400, perSyl * 0.9)); }, i * perSyl + 60);
+  });
+}
+
+/* 渲染 */
+function render() {
+  const app = document.getElementById('app');
+  let html = '';
+  try {
+    if (screen === 'home') html = renderHome();
+    else if (screen === 'learn') html = renderLearn();
+    else if (screen === 'quiz') html = renderQuiz();
+    else if (screen === 'done') html = renderDone();
+    else html = renderHome();
+  } catch (err) {
+    console.error(err);
+    html = `<div class="done-card"><div class="done-emoji">😵</div><div class="done-title">出错了</div><div class="done-subtitle">${escapeHtml(err.message || '')}</div><button class="primary-btn" data-action="back-home">返回首页</button></div>`;
+  }
+  if (panel === 'settings') html += renderSettingsPanel();
+  if (panel === 'stats') html += renderStatsPanel();
+  if (panel === 'syllables') html += renderSyllableEditor();
+  if (panel === 'list-picker') html += renderListPicker();
+  if (panel === 'lists') html += renderListsManager();
+  if (panel === 'import') html += renderImportPanel();
+  if (panel === 'import-confirm') html += renderImportConfirmPanel();
+  if (feedback) html += renderFeedback();
+  app.innerHTML = html;
+  if (screen === 'quiz' && !feedback) {
+    requestAnimationFrame(() => {
+      const inp = document.getElementById('answer-input');
+      if (inp) inp.focus();
+    });
+  }
+}
+
+function renderHome() {
+  const session = getTodaySession();
+  const newTotal = session.newIds.length, reviewTotal = session.reviewIds.length;
+  const newDone = session.learnDone.length;
+  const reviewDone = session.quizDone.filter(id => session.reviewIds.includes(id)).length;
+  const currentIds = getCurrentWordIds();
+  const learnedInList = currentIds.filter(isLearned).length;
+  const masteredInList = currentIds.filter(isMastered).length;
+  const totalInList = currentIds.length;
+  const list = getCurrentList(), unit = getCurrentUnit();
+  const listLabel = list ? list.name : '';
+  const unitLabel = unit ? unit.name : '全部';
+  const pickerTitle = unit ? `${listLabel} · ${unitLabel}` : listLabel;
+  const listAccuracy = getCurrentListAccuracy();
+  const d = new Date();
+  const dateText = `${d.getMonth()+1}月${d.getDate()}日 ${weekdayCN(d)}`;
+  const allDone = (newDone >= newTotal && reviewDone >= reviewTotal && newTotal + reviewTotal > 0);
+  const unitTabsHtml = renderUnitTabs(list);
+  return `
+    <div class="app-header">
+      <div class="logo">🌟 单词星球 V2.1</div>
+      <button class="icon-btn" data-action="open-stats">📊</button>
+    </div>
+    <div class="list-picker" data-action="open-list-picker">
+      <div class="list-picker-left">
+        <div class="list-picker-label">当前学习清单</div>
+        <div class="list-picker-name">${escapeHtml(pickerTitle)}</div>
+      </div>
+      <div class="list-picker-right">
+        <div class="list-picker-progress">${learnedInList}/${totalInList}</div>
+        <div class="list-picker-arrow">▼</div>
+      </div>
+    </div>
+    ${unitTabsHtml}
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-value">📅 ${state.totalStudyDays || 0}</div><div class="stat-label">累计天数</div></div>
+      <div class="stat-card"><div class="stat-value">${listAccuracy}%</div><div class="stat-label">本清单正确率</div></div>
+      <div class="stat-card"><div class="stat-value">${masteredInList}</div><div class="stat-label">已掌握</div></div>
+    </div>
+    <div class="task-card">
+      <div class="task-title">今日任务 · ${escapeHtml(unitLabel)}</div>
+      <div class="task-item"><span class="task-label">📖 新词学习</span><span class="task-progress">${newDone} / ${newTotal}</span></div>
+      <div class="task-item"><span class="task-label">🔁 复习巩固</span><span class="task-progress">${reviewDone} / ${reviewTotal}</span></div>
+    </div>
+    <button class="primary-btn" data-action="start" ${allDone ? 'disabled' : ''}>
+      ${allDone ? '✅ 今日已完成' : (newTotal + reviewTotal === 0 ? '暂无任务' : '开始学习')}
+    </button>
+    <div class="footer-actions">
+      <button data-action="open-settings">⚙️ 设置</button>
+      <button data-action="open-lists">📚 清单</button>
+      <button data-action="open-import">📥 导入</button>
+      <button data-action="open-syllables">✏️ 音节</button>
+      <button data-action="export">📤 备份</button>
+    </div>
+  `;
+}
+
+function renderUnitTabs(list) {
+  if (!list || list.units.length <= 1) return '';
+  const tabs = [
+    `<button class="unit-tab ${state.activeUnitId === 'all' ? 'active' : ''}" data-action="choose-unit" data-arg="all">全部</button>`,
+    ...list.units.map(u => `<button class="unit-tab ${state.activeUnitId === u.id ? 'active' : ''}" data-action="choose-unit" data-arg="${escapeHtml(u.id)}">${escapeHtml(u.name)}</button>`)
+  ];
+  return `<div class="unit-tabs">${tabs.join('')}</div>`;
+}
+
+function renderLearn() {
+  if (learnIndex >= learnQueue.length) {
+    return `<div class="done-card"><div class="done-emoji">✨</div><div class="done-title">新词学习完成</div><button class="primary-btn" data-action="begin-quiz">进入默写 →</button></div>`;
+  }
+  const wordId = learnQueue[learnIndex];
+  const word = state.master[wordId];
+  if (!word) return `<div class="done-card"><div class="done-title">数据缺失</div><button class="primary-btn" data-action="back-home">返回首页</button></div>`;
+  const total = learnQueue.length;
+  const progress = total > 0 ? (learnIndex / total * 100) : 0;
+  const syllables = getSyllables(wordId);
+  const syllablesHtml = syllables.map((syl, i) =>
+    `<div class="syl-chip syl-${i % 4}" data-action="play-syl" data-arg="${i}">${renderSyllableWithSilent(syl, i, syllables, word.word)}</div>`
+  ).join('');
+  const phrasesHtml = (word.phrases && word.phrases.length) ? `
+    <div class="phrase-block">
+      <div class="phrase-title">📝 常用词组</div>
+      ${word.phrases.map(p => `<div class="phrase-item"><div class="phrase-en">${escapeHtml(p.text)}</div>${p.meaning ? `<div class="phrase-zh">${escapeHtml(p.meaning)}</div>` : ''}</div>`).join('')}
+    </div>` : '';
+  const assocs = getWordAssociations(wordId);
+  const curList = getCurrentList(), curUnit = getCurrentUnit();
+  const curUnitName = curUnit ? curUnit.name : '全部';
+  const otherAssocs = assocs.filter(a => !(curList && a.listName === curList.name && a.unitName === curUnitName));
+  const assocText = otherAssocs.map(a => `${a.listName}·${a.unitName}`).join('、');
+  const w = state.words[wordId];
+  const encounters = w ? (w.totalEncounters || 0) : 0;
+  const assocHtml = (assocText || encounters > 0) ? `
+    <div class="assoc-bar">
+      ${assocText ? `<div>📚 该词还出现在：<b>${escapeHtml(assocText)}</b></div>` : ''}
+      ${encounters > 0 ? `<div>累计学习 <b>${encounters}</b> 次</div>` : ''}
+    </div>` : '';
+  return `
+    <div class="top-bar">
+      <button class="back-btn" data-action="back-home">←</button>
+      <div class="counter">新词 <b>${learnIndex + 1}</b> / ${total}</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    <div class="learn-card">
+      <div class="syllables-row">${syllablesHtml}</div>
+      <div class="ipa-text">${escapeHtml(word.ipa || '')}</div>
+      <div class="meaning-block">
+        <div class="meaning-pos">${escapeHtml(word.pos || '')}</div>
+        <div class="meaning-text">${escapeHtml(word.meaning || '')}</div>
+      </div>
+      ${phrasesHtml}
+      <div class="audio-row">
+        <button class="audio-btn" data-action="play-word">🔊 整词</button>
+        <button class="audio-btn" data-action="play-word-slow">🐢 慢速</button>
+        <button class="audio-btn" data-action="play-sequential">🎵 跟读</button>
+      </div>
+      ${assocHtml}
+    </div>
+    <button class="next-btn" data-action="learn-next">${learnIndex + 1 >= total ? '开始默写 →' : '下一个 →'}</button>
+  `;
+}
+
+function renderQuiz() {
+  if (quizIndex >= quizQueue.length) {
+    return `<div class="done-card"><div class="done-emoji">✨</div><div class="done-title">默写完成</div><button class="primary-btn" data-action="enter-done">查看结果</button></div>`;
+  }
+  const wordId = quizQueue[quizIndex];
+  const word = state.master[wordId];
+  if (!word) return `<div class="done-card"><div class="done-title">数据缺失</div><button class="primary-btn" data-action="back-home">返回首页</button></div>`;
+  return word.isPhrase ? renderChoiceQuiz(word) : renderSpellingQuiz(word);
+}
+
+function renderSpellingQuiz(word) {
+  const total = quizQueue.length;
+  const progress = total > 0 ? (quizIndex / total * 100) : 0;
+  const hint = getHintLevel(word.id);
+  const hintHtml = renderHintBoxes(word, hint);
+  return `
+    <div class="top-bar">
+      <button class="back-btn" data-action="back-home">←</button>
+      <div class="counter">默写 <b>${quizIndex + 1}</b> / ${total}</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    <div class="quiz-card">
+      <div class="quiz-meaning">
+        <div class="quiz-pos">${escapeHtml(word.pos || '')}</div>
+        <div class="quiz-meaning-text">${escapeHtml(word.meaning || '')}</div>
+      </div>
+      <div class="hint-row">${hintHtml}</div>
+      <div class="quiz-audio"><button class="big-audio-btn" data-action="play-quiz-word">🔊 听发音</button></div>
+      <input type="text" id="answer-input" class="answer-input" placeholder="输入英文单词..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <button class="check-btn" data-action="check">检查</button>
+    </div>
+  `;
+}
+
+function renderHintBoxes(word, level) {
+  if (level <= 1) return '';
+  const syllables = getSyllables(word.id);
+  return syllables.map((syl, i) => {
+    const letters = syl.split('').filter(c => /[a-zA-Z]/.test(c));
+    if (letters.length === 0) return '';
+    const slots = letters.map((ch, j) => {
+      if (level >= 3 && j === 0) return `<span class="slot filled">${escapeHtml(ch)}</span>`;
+      return `<span class="slot empty"></span>`;
+    }).join('');
+    return `<div class="hint-box syl-${i % 4}">${slots}</div>`;
+  }).join('');
+}
+
+function renderChoiceQuiz(word) {
+  const total = quizQueue.length;
+  const progress = total > 0 ? (quizIndex / total * 100) : 0;
+  const choices = buildChoices(word);
+  return `
+    <div class="top-bar">
+      <button class="back-btn" data-action="back-home">←</button>
+      <div class="counter">选择 <b>${quizIndex + 1}</b> / ${total}</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    <div class="quiz-card">
+      <div class="quiz-meaning">
+        <div class="quiz-pos">词组</div>
+        <div class="quiz-meaning-text">${escapeHtml(word.meaning || '')}</div>
+      </div>
+      <div class="choice-grid">
+        ${choices.map(c => `<button class="choice-btn" data-action="choice-answer" data-arg="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildChoices(word) {
+  const correct = word.word;
+  const pool = quizQueue.filter(id => id !== word.id).map(id => state.master[id])
+    .filter(w => w && w.isPhrase === word.isPhrase && w.word !== correct).map(w => w.word);
+  const unique = Array.from(new Set(pool));
+  const shuffled = unique.sort(() => Math.random() - 0.5);
+  const picks = shuffled.slice(0, 3);
+  while (picks.length < 3) {
+    const all = Object.values(state.master).filter(w => w.isPhrase === word.isPhrase && w.word !== correct).map(w => w.word);
+    const extra = all.find(w => !picks.includes(w));
+    if (!extra) break;
+    picks.push(extra);
+  }
+  return [correct, ...picks].sort(() => Math.random() - 0.5);
+}
+
+function renderDone() {
+  const session = getTodaySession();
+  const accuracy = session.total > 0 ? Math.round(session.correct / session.total * 100) : 0;
+  return `
+    <div class="done-card">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">太棒了！</div>
+      <div class="done-subtitle">今天的任务全部完成<br>明天继续加油哦～</div>
+      <div class="done-stats">
+        <div class="done-stat"><div class="done-stat-value">${session.newIds.length}</div><div class="done-stat-label">新学</div></div>
+        <div class="done-stat"><div class="done-stat-value">${session.reviewIds.length}</div><div class="done-stat-label">复习</div></div>
+        <div class="done-stat"><div class="done-stat-value">${accuracy}%</div><div class="done-stat-label">今日正确率</div></div>
+      </div>
+      <div class="done-actions"><button class="btn-primary" data-action="back-home" style="width:100%;">回到首页</button></div>
+    </div>
+  `;
+}
+
+function renderFeedback() {
+  const word = state.master[feedback.wordId];
+  if (!word) return '';
+  const isCorrect = feedback.type === 'correct';
+  const syllables = getSyllables(feedback.wordId);
+  const sylHtml = syllables.map((syl, i) => `<span class="syl syl-${i % 4}">${renderSyllableWithSilent(syl, i, syllables, word.word)}</span>`).join('-');
+  return `
+    <div class="feedback-overlay feedback-${feedback.type}">
+      <div class="feedback-icon">${isCorrect ? '✅' : '❌'}</div>
+      <div class="feedback-text">${isCorrect ? '答对了！' : '再记一下'}</div>
+      <div class="feedback-word">${sylHtml}</div>
+      <div class="feedback-ipa">${escapeHtml(word.ipa || '')}</div>
+    </div>
+  `;
+}
+
+function renderSettingsPanel() {
+  const s = state.settings;
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚙️ 学习设置</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label"><span>每日新词数量</span><span class="setting-value" id="val-new">${s.newPerDay} 个</span></div>
+          <input type="range" class="slider" id="slider-new" min="5" max="30" step="1" value="${s.newPerDay}" />
+        </div>
+        <div class="setting-group">
+          <div class="setting-label"><span>每日复习数量</span><span class="setting-value" id="val-review">${s.reviewPerDay} 个</span></div>
+          <input type="range" class="slider" id="slider-review" min="10" max="60" step="5" value="${s.reviewPerDay}" />
+        </div>
+        <div class="setting-group">
+          <div class="setting-label"><span>今日模式</span></div>
+          <div class="mode-buttons">
+            <button class="mode-btn ${s.mode === 'normal' ? 'active' : ''}" data-action="set-mode" data-arg="normal">正常</button>
+            <button class="mode-btn ${s.mode === 'easy' ? 'active' : ''}" data-action="set-mode" data-arg="easy">轻松（减半）</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <div class="switch-row">
+            <div>
+              <div class="switch-label">复习时拉取所有清单</div>
+              <div class="switch-desc">${s.globalReview ? '✓ 已开启' : '关闭：只复习当前清单的到期词'}</div>
+            </div>
+            <div class="switch ${s.globalReview ? 'on' : ''}" data-action="toggle-global-review"></div>
+          </div>
+        </div>
+        <div class="panel-tip">💡 平时按教材单元学，选关闭；考前系统复习，选开启。</div>
+        <div class="panel-actions">
+          <button class="btn-secondary" data-action="reset-today">重置今日</button>
+          <button class="btn-primary" data-action="close-panel">完成</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStatsPanel() {
+  const totalMaster = Object.keys(state.master).length;
+  const learned = Object.keys(state.words).length;
+  const mastered = Object.values(state.words).filter(w => (w.stage || 0) >= EBBINGHAUS.length).length;
+  const learning = learned - mastered;
+  let totalAttempts = 0;
+  Object.values(state.words).forEach(w => { totalAttempts += (w.correct || 0) + (w.wrong || 0); });
+  const globalAcc = getGlobalAccuracy();
+  const listAcc = getCurrentListAccuracy();
+  const curList = getCurrentList(), curUnit = getCurrentUnit();
+  const listName = curList ? curList.name : '', unitName = curUnit ? curUnit.name : '全部';
+  const listStats = state.lists.map(list => {
+    const ids = Array.from(new Set(list.units.reduce((a, u) => a.concat(u.wordIds), [])));
+    return { name: list.name, learnedN: ids.filter(isLearned).length, masteredN: ids.filter(isMastered).length, total: ids.length };
+  });
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📊 学习统计</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="stat-big-row">
+          <div class="stat-big"><div class="stat-big-value">${learned}<span style="font-size:16px;color:#7c8aa0;">/${totalMaster}</span></div><div class="stat-big-label">已学单词（全部）</div></div>
+          <div class="stat-big"><div class="stat-big-value">📅 ${state.totalStudyDays || 0}</div><div class="stat-big-label">累计学习天数</div></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:16px 0 10px;">正确率</div>
+        <div class="stat-list">
+          <div class="stat-list-item highlight"><span>本清单（${escapeHtml(listName)} · ${escapeHtml(unitName)}）</span><b>${listAcc}%</b></div>
+          <div class="stat-list-item"><span>全部词条</span><b>${globalAcc}%</b></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:16px 0 10px;">学习进度</div>
+        <div class="stat-list">
+          <div class="stat-list-item"><span>已掌握（完成30天复习）</span><b>${mastered}</b></div>
+          <div class="stat-list-item"><span>学习中</span><b>${learning}</b></div>
+          <div class="stat-list-item"><span>未学习</span><b>${totalMaster - learned}</b></div>
+          <div class="stat-list-item"><span>累计答题</span><b>${totalAttempts}</b></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:20px 0 10px;">各清单进度</div>
+        <div class="stat-list">
+          ${listStats.map(ls => `<div class="stat-list-item"><span>${escapeHtml(ls.name)}</span><b>${ls.learnedN}/${ls.total}（掌握${ls.masteredN}）</b></div>`).join('')}
+        </div>
+        <div class="panel-actions" style="margin-top:20px;">
+          <button class="btn-primary" data-action="close-panel" style="width:100%;">知道了</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderListPicker() {
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📚 选择清单</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="panel-tip">点击清单或单元切换学习目标。</div>
+        ${state.lists.map(l => {
+          const isActive = l.id === state.activeListId;
+          const ids = Array.from(new Set(l.units.reduce((a, u) => a.concat(u.wordIds), [])));
+          const learnedN = ids.filter(isLearned).length;
+          return `
+            <div style="margin-bottom:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;">
+                <div style="font-size:15px;font-weight:700;color:${isActive ? 'var(--primary)' : 'var(--text)'};">${escapeHtml(l.name)}</div>
+                <div style="font-size:12px;color:var(--text-muted);">${learnedN}/${ids.length}</div>
+              </div>
+              <button class="list-manage-item ${isActive && state.activeUnitId === 'all' ? 'active' : ''}" data-action="choose-list" data-arg="${escapeHtml(l.id)}" style="width:100%;text-align:left;">
+                <div class="list-manage-left">
+                  <div class="list-manage-name">全部（${ids.length}词）</div>
+                  <div class="list-manage-meta">整个清单</div>
+                </div>
+              </button>
+              ${l.units.length > 1 ? l.units.map(u => {
+                const uActive = isActive && state.activeUnitId === u.id;
+                const uLearned = u.wordIds.filter(isLearned).length;
+                return `<button class="list-manage-item ${uActive ? 'active' : ''}" data-action="choose-unit-from-picker" data-arg="${escapeHtml(l.id + '|' + u.id)}" style="width:100%;text-align:left;margin-top:6px;">
+                  <div class="list-manage-left">
+                    <div class="list-manage-name">${escapeHtml(u.name)}</div>
+                    <div class="list-manage-meta">${uLearned}/${u.wordIds.length} 已学</div>
+                  </div>
+                </button>`;
+              }).join('') : ''}
+            </div>`;
+        }).join('')}
+        <div class="panel-actions" style="margin-top:20px;">
+          <button class="btn-secondary" data-action="open-lists">管理清单</button>
+          <button class="btn-primary" data-action="close-panel">关闭</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderListsManager() {
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📚 清单管理</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="panel-tip">删除清单不会删除已学进度（进度按词保存）。</div>
+        ${state.lists.map(l => {
+          const ids = Array.from(new Set(l.units.reduce((a, u) => a.concat(u.wordIds), [])));
+          const learnedN = ids.filter(isLearned).length;
+          const isExam = l.id === 'list_exam';
+          return `
+            <div class="list-manage-item">
+              <div class="list-manage-left">
+                <div class="list-manage-name">${escapeHtml(l.name)}</div>
+                <div class="list-manage-meta">${l.units.length} 个单元 · ${ids.length} 词 · 已学 ${learnedN}</div>
+              </div>
+              <div class="list-manage-actions">
+                <button class="list-manage-btn" data-action="rename-list" data-arg="${escapeHtml(l.id)}">重命名</button>
+                ${!isExam ? `<button class="list-manage-btn danger" data-action="delete-list" data-arg="${escapeHtml(l.id)}">删除</button>` : ''}
+              </div>
+            </div>`;
+        }).join('')}
+        <div class="panel-actions" style="margin-top:20px;">
+          <button class="btn-secondary" data-action="open-import">导入新清单</button>
+          <button class="btn-primary" data-action="close-panel">关闭</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderImportPanel() {
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📥 导入清单</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="import-tabs">
+          <button class="import-tab ${importTab === 'file' ? 'active' : ''}" data-action="switch-import-tab" data-arg="file">📁 上传文件</button>
+          <button class="import-tab ${importTab === 'text' ? 'active' : ''}" data-action="switch-import-tab" data-arg="text">📝 粘贴 JSON</button>
+        </div>
+        ${importTab === 'file' ? `
+          <label class="file-input" for="import-file">
+            ${importFileName ? `📄 ${escapeHtml(importFileName)}${importFileContent ? '（已读取）' : '（读取中…）'}` : '点击选择 JSON 文件'}
+          </label>
+          <input type="file" id="import-file" accept=".json,application/json" style="display:none" />
+        ` : `
+          <textarea class="import-textarea" id="import-text" placeholder='粘贴 JSON...'></textarea>
+        `}
+        <div class="panel-tip" style="margin-top:14px;">
+          <b>支持：</b>多单元 <code>{ name, units: [...] }</code> 或单清单 <code>{ name, words: [...] }</code><br>
+          <b>无 syllables 字段的词会自动用自然拼读规则拆分。</b><br>
+          <b>已存在的词条会合并字段（释义/词性/词组），不会丢失旧内容。</b><br>
+          <b>名为"全部"的单元会自动改名为"全部词"，避免与界面上的"全部"按钮冲突。</b>
+        </div>
+        <div class="panel-actions">
+          <button class="btn-secondary" data-action="close-panel">取消</button>
+          <button class="btn-primary" data-action="parse-import">下一步 →</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderImportConfirmPanel() {
+  if (!pendingImport) return '';
+  const { listName, unitDefs, stats } = pendingImport;
+  const sameNameList = state.lists.find(l => l.name === listName);
+  const mergeSameDisabled = !sameNameList;
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📥 确认导入</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <div class="panel-tip">
+          <b>将导入：</b><br>
+          清单名：<b>${escapeHtml(listName)}</b><br>
+          单元数：<b>${unitDefs.length}</b> 个<br>
+          词条数：<b>${stats.totalWords}</b> 个（新增 ${stats.newWords}，更新 ${stats.existingWords}）
+        </div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">导入到哪个清单？</div>
+        <div class="import-target-option ${importTargetChoice === 'merge-same' ? 'checked' : ''} ${mergeSameDisabled ? 'disabled' : ''}" data-action="choose-import-target" data-arg="merge-same">
+          <input type="radio" name="import-target" ${importTargetChoice === 'merge-same' ? 'checked' : ''} ${mergeSameDisabled ? 'disabled' : ''}>
+          <div style="flex:1;">
+            <div class="opt-title">合并到同名清单${mergeSameDisabled ? '（不存在）' : ''}</div>
+            <div class="opt-desc">
+              ${sameNameList ? `已有「${escapeHtml(listName)}」（${Array.from(new Set(sameNameList.units.reduce((a,u)=>a.concat(u.wordIds),[]))).length} 词），将合并到它` : '当前没有同名清单，此项不可用'}
+            </div>
+          </div>
+        </div>
+        <div class="import-target-option ${importTargetChoice === 'merge-other' ? 'checked' : ''}" data-action="choose-import-target" data-arg="merge-other">
+          <input type="radio" name="import-target" ${importTargetChoice === 'merge-other' ? 'checked' : ''}>
+          <div style="flex:1;">
+            <div class="opt-title">合并到其他清单</div>
+            <div class="opt-desc">选择一个已有清单，把词条并入</div>
+            ${importTargetChoice === 'merge-other' ? `
+              <select class="opt-input" id="import-target-list">
+                <option value="">-- 请选择 --</option>
+                ${state.lists.map(l => `<option value="${escapeHtml(l.id)}" ${importTargetListId === l.id ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('')}
+              </select>
+            ` : ''}
+          </div>
+        </div>
+        <div class="import-target-option ${importTargetChoice === 'new' ? 'checked' : ''}" data-action="choose-import-target" data-arg="new">
+          <input type="radio" name="import-target" ${importTargetChoice === 'new' ? 'checked' : ''}>
+          <div style="flex:1;">
+            <div class="opt-title">新建清单</div>
+            <div class="opt-desc">用新名称创建一个独立清单</div>
+            ${importTargetChoice === 'new' ? `
+              <input type="text" class="opt-input" id="import-new-name" placeholder="输入新清单名" value="${escapeHtml(importNewName || listName)}">
+            ` : ''}
+          </div>
+        </div>
+        <div class="panel-tip" style="margin-top:16px;">
+          <b>合并规则：</b>已存在的词条会合并字段（释义、词性、词组），不会丢失旧内容；新词条直接添加。<br>
+          <b>学习进度：</b>不受影响，已学过的词仍然保留 stage 和复习计划。
+        </div>
+        <div class="panel-actions">
+          <button class="btn-secondary" data-action="cancel-import">返回</button>
+          <button class="btn-primary" data-action="execute-import">执行导入</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSyllableList() {
+  const keyword = sylSearch.trim().toLowerCase();
+  const allIds = Object.keys(state.master);
+  const filtered = allIds.filter(id => {
+    if (!keyword) return true;
+    return state.master[id].word.toLowerCase().includes(keyword);
+  });
+  if (filtered.length === 0) {
+    return '<div style="text-align:center;padding:40px;color:#7c8aa0;">未找到匹配的单词</div>';
+  }
+  return filtered.map(id => {
+    const w = state.master[id];
+    const syllables = getSyllables(id);
+    const isCustom = state.customSyllables && state.customSyllables[id];
+    const isEditing = editingWordId === id;
+    if (isEditing) {
+      return `
+        <div class="syl-item syl-item-editing" style="border-color: var(--primary);background:white;">
+          <div class="syl-item-left">
+            <div class="syl-item-word">${escapeHtml(w.word)}</div>
+            <div class="syl-edit-row">
+              <input type="text" id="syl-edit-input" value="${escapeHtml(syllables.join('-'))}" placeholder="如 a-bil-i-ty" />
+              <button class="save" data-action="save-syl" data-arg="${escapeHtml(id)}">保存</button>
+              <button data-action="cancel-edit-syl">取消</button>
+            </div>
+            <div class="syl-edit-hint">用连字符 <b>-</b> 分隔音节</div>
+            ${renderSilentHint(w.word)}
+          </div>
+        </div>`;
+    }
+    const sylHtml = syllables.map((syl, i) => renderSyllableWithSilent(syl, i, syllables, w.word)).join('<span class="sep">·</span>');
+    return `
+      <div class="syl-item ${isCustom ? 'customized' : ''}">
+        <div class="syl-item-left">
+          <div class="syl-item-word">${escapeHtml(w.word)}${isCustom ? ' ✏️' : ''}</div>
+          <div class="syl-item-syls">${sylHtml}</div>
+        </div>
+        <button class="syl-item-edit" data-action="edit-syl" data-arg="${escapeHtml(id)}">编辑</button>
+      </div>`;
+  }).join('');
+}
+
+function renderSyllableEditor() {
+  const customizedCount = Object.keys(state.customSyllables || {}).length;
+  return `
+    <div class="panel-mask" data-mask="1">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">✏️ 音节纠错</div>
+          <button class="panel-close" data-action="close-panel">✕</button>
+        </div>
+        <button class="recalc-btn" data-action="recalc-all-syl">🔄 用自然拼读规则重算全部词（会覆盖未自定义的拆分）</button>
+        <input type="text" class="editor-search" id="syl-search" placeholder="🔍 搜索单词..." value="${escapeHtml(sylSearch)}" />
+        <div class="panel-tip">已自定义 <b>${customizedCount}</b> 个（保留不被重算覆盖）。灰色带划线的字母表示不发音。</div>
+        <div class="syl-list" id="syl-list-container">${renderSyllableList()}</div>
+        <div class="panel-actions" style="margin-top:20px;">
+          ${customizedCount > 0 ? '<button class="btn-secondary" data-action="reset-all-syl">清空所有自定义</button>' : ''}
+          <button class="btn-primary" data-action="close-panel">完成</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* 业务逻辑 */
+function startLearning() {
+  const session = getTodaySession();
+  const pendingNew = session.newIds.filter(id => !session.learnDone.includes(id));
+  const pendingQuiz = [...session.newIds, ...session.reviewIds].filter(id => !session.quizDone.includes(id));
+  if (pendingNew.length > 0) {
+    learnQueue = pendingNew; learnIndex = 0; screen = 'learn'; render();
+  } else if (pendingQuiz.length > 0) beginQuiz();
+  else enterDone();
+}
+function nextLearn() {
+  const session = getTodaySession();
+  const currentId = learnQueue[learnIndex];
+  if (currentId && !session.learnDone.includes(currentId)) { session.learnDone.push(currentId); saveState(); }
+  learnIndex++;
+  if (learnIndex >= learnQueue.length) beginQuiz();
+  else render();
+}
+function beginQuiz() {
+  const session = getTodaySession();
+  quizQueue = [...session.newIds, ...session.reviewIds].filter(id => !session.quizDone.includes(id));
+  quizIndex = 0;
+  if (quizQueue.length === 0) enterDone();
+  else { screen = 'quiz'; render(); }
+}
+function enterDone() {
+  const today = dateStr();
+  if (state.lastStudyDate !== today) {
+    state.totalStudyDays = (state.totalStudyDays || 0) + 1;
+    state.lastStudyDate = today;
+    saveState();
+  }
+  screen = 'done'; render();
+}
+function checkAnswer() {
+  if (feedback) return;
+  const inp = document.getElementById('answer-input');
+  if (!inp) return;
+  const value = normalize(inp.value);
+  if (!value) return;
+  const wordId = quizQueue[quizIndex];
+  const word = state.master[wordId];
+  if (!word) return;
+  const correct = normalize(word.word);
+  const session = getTodaySession();
+  session.total += 1;
+  if (value === correct) {
+    session.correct += 1;
+    if (!session.quizDone.includes(wordId)) session.quizDone.push(wordId);
+    updateWordProgress(wordId, true);
+    saveState();
+    feedback = { type: 'correct', wordId };
+    render();
+    speakWord(word.word);
+    feedbackTimer = setTimeout(() => {
+      feedback = null; quizIndex++;
+      if (quizIndex >= quizQueue.length) enterDone(); else render();
+    }, 1400);
+  } else {
+    updateWordProgress(wordId, false);
+    saveState();
+    feedback = { type: 'wrong', wordId };
+    render();
+    feedbackTimer = setTimeout(() => {
+      feedback = null; quizQueue.push(quizQueue[quizIndex]); quizIndex++; render();
+    }, 2200);
+  }
+}
+function checkChoiceAnswer(choice) {
+  if (feedback) return;
+  const wordId = quizQueue[quizIndex];
+  const word = state.master[wordId];
+  if (!word) return;
+  const session = getTodaySession();
+  session.total += 1;
+  const isCorrect = choice === word.word;
+  if (isCorrect) {
+    session.correct += 1;
+    if (!session.quizDone.includes(wordId)) session.quizDone.push(wordId);
+    updateWordProgress(wordId, true);
+    saveState();
+    feedback = { type: 'correct', wordId };
+    render();
+    speakWord(word.word);
+    feedbackTimer = setTimeout(() => {
+      feedback = null; quizIndex++;
+      if (quizIndex >= quizQueue.length) enterDone(); else render();
+    }, 1400);
+  } else {
+    updateWordProgress(wordId, false);
+    saveState();
+    feedback = { type: 'wrong', wordId };
+    render();
+    feedbackTimer = setTimeout(() => {
+      feedback = null; quizQueue.push(quizQueue[quizIndex]); quizIndex++; render();
+    }, 2200);
+  }
+}
+function goHome() {
+  if (feedbackTimer) { clearTimeout(feedbackTimer); feedbackTimer = null; }
+  if (syllableTimer) { clearTimeout(syllableTimer); syllableTimer = null; }
+  clearSyllableHighlight();
+  feedback = null; panel = null; editingWordId = null;
+  screen = 'home'; render();
+}
+function switchList(listId, unitId) {
+  state.activeListId = listId;
+  state.activeUnitId = unitId || 'all';
+  saveState(); panel = null; screen = 'home'; render();
+}
+function saveSyllableEdit(wordId) {
+  const inp = document.getElementById('syl-edit-input');
+  if (!inp) return;
+  const raw = inp.value.trim();
+  if (!raw) { alert('请输入音节'); return; }
+  const parts = raw.split(/[-·\s,，]+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) { alert('请输入音节'); return; }
+  if (!state.customSyllables) state.customSyllables = {};
+  const word = state.master[wordId];
+  const original = (word && word.syllables) ? word.syllables.join('-') : '';
+  const current = parts.join('-');
+  if (current === original) delete state.customSyllables[wordId];
+  else state.customSyllables[wordId] = parts;
+  saveState(); editingWordId = null; render();
+}
+function recalcAllSyllables() {
+  const total = Object.keys(state.master).length;
+  if (!confirm(`将用自然拼读规则重算 ${total} 个词的音节。\n\n· 你手动改过的词会保留\n· 其余词会覆盖\n\n确定继续吗？`)) return;
+  let updated = 0, kept = 0;
+  Object.keys(state.master).forEach(id => {
+    if (state.customSyllables && state.customSyllables[id]) { kept++; return; }
+    const w = state.master[id];
+    if (!w) return;
+    const newSyl = autoSyllabify(w.word);
+    const oldSyl = w.syllables || [];
+    if (JSON.stringify(newSyl) !== JSON.stringify(oldSyl)) { w.syllables = newSyl; updated++; }
+  });
+  saveState();
+  alert(`✓ 完成！\n\n重算并更新：${updated} 个\n保留你手动改的：${kept} 个`);
+  render();
+}
+
+/* 导入流程 */
+function parseImportJson(json) {
+  if (!json || typeof json !== 'object') throw new Error('JSON 格式错误');
+  const listName = String(json.name || '未命名清单').trim();
+  let unitDefs = [];
+  if (Array.isArray(json.units) && json.units.length) {
+    unitDefs = json.units.map(u => ({ name: String(u.name || '未命名单元').trim(), words: Array.isArray(u.words) ? u.words : [] }));
+  } else if (Array.isArray(json.words)) {
+    unitDefs = [{ name: '全部', words: json.words }];
+  } else throw new Error('JSON 里找不到 words 或 units 数组');
+  let totalWords = 0, newWords = 0, existingWords = 0;
+  const seen = new Set();
+  unitDefs.forEach(u => {
+      // 跳过"全部"或"全部词"单元（界面自带"全部"已覆盖）
+    if (u.name === '全部' || u.name === '全部词' || /^全部词[_\s]/.test(u.name)) {
+      return;
+    }
+    u.words.forEach(item => {
+      let wordStr;
+      if (typeof item === 'string') wordStr = item.trim();
+      else if (item && typeof item === 'object') wordStr = String(item.word || '').trim();
+      if (!wordStr) return;
+      const id = wordIdOf(wordStr);
+      if (seen.has(id)) return;
+      seen.add(id); totalWords++;
+      if (state.master[id]) existingWords++; else newWords++;
+    });
+  });
+  return { listName, unitDefs, stats: { totalWords, newWords, existingWords } };
+}
+
+function startParseImport() {
+  try {
+    let text;
+    if (importTab === 'text') {
+      const ta = document.getElementById('import-text');
+      if (!ta || !ta.value.trim()) { alert('请粘贴 JSON 内容'); return; }
+      text = ta.value.trim();
+    } else {
+      if (!importFileContent) { alert('请先选择文件'); return; }
+      text = importFileContent;
+    }
+    const json = JSON.parse(text);
+    pendingImport = parseImportJson(json);
+    importTargetChoice = 'merge-same';
+    const sameNameList = state.lists.find(l => l.name === pendingImport.listName);
+    if (!sameNameList) importTargetChoice = 'new';
+    importTargetListId = '';
+    importNewName = pendingImport.listName;
+    panel = 'import-confirm';
+    render();
+  } catch (e) {
+    alert('JSON 解析失败：' + (e.message || e));
+  }
+}
+
+function executeImport() {
+  if (!pendingImport) return;
+  const { listName, unitDefs } = pendingImport;
+  let targetList = null;
+  if (importTargetChoice === 'merge-same') {
+    targetList = state.lists.find(l => l.name === listName);
+    if (!targetList) { alert('同名清单不存在'); return; }
+  } else if (importTargetChoice === 'merge-other') {
+    if (!importTargetListId) { alert('请选择目标清单'); return; }
+    targetList = state.lists.find(l => l.id === importTargetListId);
+    if (!targetList) { alert('目标清单不存在'); return; }
+  } else if (importTargetChoice === 'new') {
+    if (!importNewName || !importNewName.trim()) { alert('请输入新清单名'); return; }
+    targetList = { id: uid('list'), name: importNewName.trim(), units: [] };
+    state.lists.push(targetList);
+  }
+  let addedCount = 0, mergedCount = 0, autoSylCount = 0, keptProgressCount = 0, renamedUnits = 0;
+  unitDefs.forEach(u => {
+    const wordIds = [];
+    u.words.forEach(item => {
+      let wordStr, extra = {};
+      if (typeof item === 'string') wordStr = item.trim();
+      else if (item && typeof item === 'object') { wordStr = String(item.word || '').trim(); extra = item; }
+      if (!wordStr) return;
+      const id = wordIdOf(wordStr);
+      let syl;
+      if (Array.isArray(extra.syllables) && extra.syllables.length) syl = extra.syllables;
+      else { syl = autoSyllabify(wordStr); autoSylCount++; }
+      if (!state.master[id]) {
+        state.master[id] = {
+          id, word: wordStr,
+          pos: extra.pos || '', meaning: extra.meaning || '', ipa: extra.ipa || '',
+          syllables: syl,
+          phrases: Array.isArray(extra.phrases) ? extra.phrases : [],
+          isPhrase: !!extra.isPhrase
+        };
+        addedCount++;
+      } else {
+        const existing = state.master[id];
+        existing.meaning = mergeMeaning(existing.meaning, extra.meaning);
+        existing.pos = mergePos(existing.pos, extra.pos);
+        if (!existing.ipa && extra.ipa) existing.ipa = extra.ipa;
+        if (Array.isArray(extra.syllables) && extra.syllables.length) {
+          if (!state.customSyllables || !state.customSyllables[id]) existing.syllables = extra.syllables;
+        }
+        if (Array.isArray(extra.phrases) && extra.phrases.length) existing.phrases = mergePhrases(existing.phrases, extra.phrases);
+        if (extra.isPhrase !== undefined) existing.isPhrase = !!extra.isPhrase;
+        mergedCount++;
+      }
+      if (state.words[id]) keptProgressCount++;
+      if (!wordIds.includes(id)) wordIds.push(id);
+    });
+    let unitName = u.name;
+    if (unitName === '全部') { unitName = '全部词'; renamedUnits++; }
+    let unit = targetList.units.find(x => x.name === unitName);
+    if (!unit) { unit = { id: uid('unit'), name: unitName, wordIds: [] }; targetList.units.push(unit); }
+    wordIds.forEach(id => { if (!unit.wordIds.includes(id)) unit.wordIds.push(id); });
+  });
+  saveState();
+  const renameMsg = renamedUnits > 0 ? `\n单元"全部"→"全部词"：${renamedUnits} 个` : '';
+  const msg = `✅ 导入成功！\n\n目标清单：${targetList.name}\n单元：${unitDefs.length} 个\n新增词汇：${addedCount} 个\n合并已有词汇：${mergedCount} 个\n自动拆分音节：${autoSylCount} 个\n保留进度的词：${keptProgressCount} 个${renameMsg}`;
+  alert(msg);
+  pendingImport = null;
+  importFileContent = null; importFileName = '';
+  panel = null;
+  state.activeListId = targetList.id;
+  state.activeUnitId = 'all';
+  saveState();
+  screen = 'home';
+  render();
+}
+
+/* 事件 */
+document.addEventListener('click', (e) => {
+  if (e.target.classList && e.target.classList.contains('panel-mask')) {
+    if (panel) { panel = null; editingWordId = null; render(); }
+    return;
+  }
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const arg = el.dataset.arg;
+  switch (action) {
+    case 'start': startLearning(); break;
+    case 'back-home': goHome(); break;
+    case 'learn-next': nextLearn(); break;
+    case 'begin-quiz': beginQuiz(); break;
+    case 'enter-done': enterDone(); break;
+    case 'check': checkAnswer(); break;
+    case 'choice-answer': checkChoiceAnswer(arg); break;
+    case 'play-word':
+      if (screen === 'learn' && learnQueue[learnIndex]) speakWord(state.master[learnQueue[learnIndex]].word, 0.85);
+      break;
+    case 'play-word-slow':
+      if (screen === 'learn' && learnQueue[learnIndex]) speakWord(state.master[learnQueue[learnIndex]].word, 0.5);
+      break;
+    case 'play-sequential': playSequentialSyllables(); break;
+    case 'play-syl': playSyllableInWord(parseInt(arg, 10)); break;
+    case 'play-quiz-word':
+      if (screen === 'quiz' && quizQueue[quizIndex]) speakWord(state.master[quizQueue[quizIndex]].word, 0.85);
+      break;
+    case 'open-settings': panel = 'settings'; render(); break;
+    case 'open-stats': panel = 'stats'; render(); break;
+    case 'open-syllables': panel = 'syllables'; sylSearch = ''; editingWordId = null; render(); break;
+    case 'open-list-picker': panel = 'list-picker'; render(); break;
+    case 'open-lists': panel = 'lists'; render(); break;
+    case 'open-import': panel = 'import'; importTab = 'file'; importFileName = ''; importFileContent = null; pendingImport = null; render(); break;
+    case 'close-panel': panel = null; editingWordId = null; render(); break;
+    case 'export': {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `单词星球备份_${dateStr()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      break;
+    }
+    case 'recalc-all-syl': recalcAllSyllables(); break;
+    case 'choose-list': switchList(arg, 'all'); break;
+    case 'choose-unit': state.activeUnitId = arg; saveState(); render(); break;
+    case 'choose-unit-from-picker': {
+      const [listId, unitId] = arg.split('|');
+      switchList(listId, unitId);
+      break;
+    }
+    case 'set-mode': {
+      if (state.settings.mode === arg) break;
+      state.settings.mode = arg; applyCurrentLimits(); saveState(); render();
+      break;
+    }
+    case 'toggle-global-review': {
+      state.settings.globalReview = !state.settings.globalReview;
+      delete state.sessions[sessionKey()];
+      saveState(); render();
+      break;
+    }
+    case 'reset-today': {
+      if (confirm('确定要重置今天的学习进度吗？')) {
+        delete state.sessions[sessionKey()];
+        saveState(); panel = null; screen = 'home'; render();
+      }
+      break;
+    }
+    case 'rename-list': {
+      const list = state.lists.find(l => l.id === arg);
+      if (!list) break;
+      const name = prompt('输入新的清单名：', list.name);
+      if (name && name.trim()) { list.name = name.trim(); saveState(); render(); }
+      break;
+    }
+    case 'delete-list': {
+      const list = state.lists.find(l => l.id === arg);
+      if (!list) break;
+      if (list.id === 'list_exam') { alert('默认清单不能删除'); break; }
+      if (!confirm(`确定删除清单"${list.name}"吗？`)) break;
+      state.lists = state.lists.filter(l => l.id !== arg);
+      if (state.activeListId === arg) {
+        state.activeListId = state.lists[0] ? state.lists[0].id : 'list_exam';
+        state.activeUnitId = 'all';
+      }
+      saveState(); render();
+      break;
+    }
+    case 'switch-import-tab':
+      importTab = arg; importFileName = ''; importFileContent = null; render();
+      break;
+    case 'parse-import': startParseImport(); break;
+    case 'choose-import-target': {
+      if (arg === 'merge-same') {
+        const sameName = state.lists.find(l => l.name === (pendingImport && pendingImport.listName));
+        if (!sameName) return;
+      }
+      importTargetChoice = arg;
+      const targetSel = document.getElementById('import-target-list');
+      if (targetSel) importTargetListId = targetSel.value;
+      const newInput = document.getElementById('import-new-name');
+      if (newInput) importNewName = newInput.value;
+      render();
+      break;
+    }
+    case 'cancel-import': panel = 'import'; pendingImport = null; render(); break;
+    case 'execute-import': executeImport(); break;
+    case 'edit-syl':
+      editingWordId = arg;
+      {
+        const listEl = document.getElementById('syl-list-container');
+        if (listEl) listEl.innerHTML = renderSyllableList();
+        else render();
+      }
+      requestAnimationFrame(() => {
+        const inp = document.getElementById('syl-edit-input');
+        if (inp) { inp.focus(); inp.select(); }
+      });
+      break;
+    case 'cancel-edit-syl':
+      editingWordId = null;
+      {
+        const listEl = document.getElementById('syl-list-container');
+        if (listEl) listEl.innerHTML = renderSyllableList();
+        else render();
+      }
+      break;
+    case 'save-syl': saveSyllableEdit(arg); break;
+    case 'reset-all-syl': {
+      if (confirm('确定清空所有自定义音节吗？')) {
+        state.customSyllables = {};
+        saveState(); render();
+      }
+      break;
+    }
+  }
+});
+
+document.addEventListener('input', (e) => {
+  let changed = false;
+  if (e.target.id === 'slider-new') {
+    const v = parseInt(e.target.value, 10);
+    const el = document.getElementById('val-new');
+    if (el) el.textContent = v + ' 个';
+    state.settings.newPerDay = v; changed = true;
+  }
+  if (e.target.id === 'slider-review') {
+    const v = parseInt(e.target.value, 10);
+    const el = document.getElementById('val-review');
+    if (el) el.textContent = v + ' 个';
+    state.settings.reviewPerDay = v; changed = true;
+  }
+  if (changed) { applyCurrentLimits(); saveState(); }
+  if (e.target.id === 'syl-search') {
+    sylSearch = e.target.value;
+    const listEl = document.getElementById('syl-list-container');
+    if (listEl) listEl.innerHTML = renderSyllableList();
+  }
+  if (e.target.id === 'import-target-list') importTargetListId = e.target.value;
+  if (e.target.id === 'import-new-name') importNewName = e.target.value;
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'import-file' && e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    importFileName = file.name;
+    importFileContent = null;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      importFileContent = ev.target.result;
+      const lbl = document.querySelector('label.file-input');
+      if (lbl) lbl.textContent = '📄 ' + importFileName + '（已读取）';
+    };
+    reader.onerror = () => { alert('文件读取失败'); importFileName = ''; importFileContent = null; };
+    reader.readAsText(file, 'utf-8');
+  }
+  if (e.target.id === 'import-target-list') importTargetListId = e.target.value;
+  if (e.target.id === 'import-new-name') importNewName = e.target.value;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && screen === 'quiz' && !feedback) {
+    const inp = document.getElementById('answer-input');
+    if (inp && document.activeElement === inp) { e.preventDefault(); checkAnswer(); }
+  }
+  if (e.key === 'Enter' && editingWordId) {
+    const inp = document.getElementById('syl-edit-input');
+    if (inp && document.activeElement === inp) { e.preventDefault(); saveSyllableEdit(editingWordId); }
+  }
+  if (e.key === 'Escape' && panel) {
+    panel = null; editingWordId = null; render();
+  }
+});
+
+state = loadState();
+autoFixDuplicateUnits();
+saveState();
+render();
+</script>
+</body>
+</html>
