@@ -212,7 +212,7 @@ button:active { transform:scale(0.97); }
   .unit-tab { font-size:11px; padding:6px 10px; }
 }
 </style>
-</head>
+<script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script></head>
 <body>
 <div id="app"></div>
 
@@ -2017,6 +2017,154 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+
+/* ============================================================
+   CloudBase PostgreSQL 云同步模块
+   ============================================================ */
+
+// 【重要】填入你的环境 ID 和 Publishable Key
+const CLOUDBASE_ENV_ID = 'word-planet-d7guab6t843d6647d';
+const CLOUDBASE_PUBLISHABLE_KEY = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjgzOGZkYjdkLTBjYmYtNDdlNy1iMWU0LTczODE5NzUzOGRjNSJ9.eyJhdWQiOiJ3b3JkLXBsYW5ldC1kN2d1YWI2dDg0M2Q2NjQ3ZCIsImV4cCI6MjUzNDAyMzAwNzk5LCJpYXQiOjE3OTA1NzE4NzAsImF0X2hhc2giOiJUcm1wdnFfd1NTYWd1aS1QNmVEZTlnIiwicHJvamVjdF9pZCI6IndvcmQtcGxhbmV0LWQ3Z3VhYjZ0ODQzZDY2NDdkIiwibWV0YSI6eyJwbGF0Zm9ybSI6IkFwaUtleSJ9LCJyb2xlIjoic2VydmljZV9yb2xlIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYXBpa2V5IiwicHJvdmlkZXJzIjpbImFwaWtleSJdfSwiYWRtaW5pc3RyYXRvcl9pZCI6IjIxMDQ0MzA4NDAyOTIzMTUxMzYiLCJ1c2VyX3R5cGUiOiIiLCJjbGllbnRfdHlwZSI6ImNsaWVudF9zZXJ2ZXIiLCJpc19zeXN0ZW1fYWRtaW4iOnRydWV9.PNgcomNXChnErwZV1Qapyg0HEK_qbRbGMH_3rVqFlsVLVMwKyEsc01TnKdCqIq-tPuIOXwF1SbSpQUaQu9r_37E_c5SUDjzSSkIDnRdUu4u1h1kJlUWoaUiM9eRXuAUoE8RsDQqvT1ilHwN2ixGDObskxDalOg3DIE4STipQyZsGxxInEOzCpJ9b4z_40ZODDlpL2M4VNO1HKmBAOh5H2wU9HfUW3MmLVSFBh5LKpgLkOa_Zqe5TtFtAcxBW8Zt5Gyjqp-tAXZxZFO76EYV3BUTF-dRgK5yq2Y5Wz_co3uZqFCo-tFTZSORMKWODByMwatVknr5RoxsQjV4J3mE2Ew';
+
+let syncTimer = null;
+let isSyncing = false;
+let lastSyncTime = 0;
+let rdb = null;
+
+function initCloudBase() {
+    if (!CLOUDBASE_ENV_ID || !CLOUDBASE_PUBLISHABLE_KEY ||
+        CLOUDBASE_ENV_ID === '你的环境ID') {
+        console.warn('[CloudBase同步] 未配置环境ID或Key，同步已跳过');
+        return false;
+    }
+    try {
+        const app = cloudbase.init({
+            env: CLOUDBASE_ENV_ID,
+            accessKey: CLOUDBASE_PUBLISHABLE_KEY
+        });
+        rdb = app.rdb();
+        console.log('[CloudBase同步] 初始化成功');
+        return true;
+    } catch (e) {
+        console.warn('[CloudBase同步] 初始化失败:', e);
+        return false;
+    }
+}
+
+function getUserId() {
+    let uid = localStorage.getItem('wp_cloudbase_uid');
+    if (!uid) {
+        uid = 'user_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('wp_cloudbase_uid', uid);
+    }
+    return uid;
+}
+
+async function pullFromCloudBase() {
+    if (!rdb || isSyncing) return false;
+    try {
+        isSyncing = true;
+        const userId = getUserId();
+        const { data, error } = await rdb.from('user_progress')
+            .select('*')
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            console.log('[CloudBase同步] 云端无数据，准备首次上传');
+            isSyncing = false;
+            await pushToCloudBase();
+            return true;
+        }
+
+        const cloudData = data[0];
+        const cloudUpdated = Number(cloudData.sync_updated_at || 0);
+        const localUpdated = Number(localStorage.getItem('wp_sync_updated') || 0);
+
+        if (cloudUpdated > localUpdated) {
+            console.log('[CloudBase同步] 使用云端数据');
+            state = cloudData.state;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            localStorage.setItem('wp_sync_updated', String(cloudUpdated));
+            if (typeof autoFixDuplicateUnits === 'function') autoFixDuplicateUnits();
+            if (typeof render === 'function') render();
+        } else {
+            console.log('[CloudBase同步] 本地数据较新，推送到云端');
+            await pushToCloudBase();
+        }
+        isSyncing = false;
+        return true;
+    } catch (e) {
+        console.warn('[CloudBase同步] 拉取失败:', e);
+        isSyncing = false;
+        return false;
+    }
+}
+
+async function pushToCloudBase() {
+    if (!rdb || !state || isSyncing) return;
+    try {
+        isSyncing = true;
+        const now = Date.now();
+        const userId = getUserId();
+
+        // 先查是否已存在
+        const { data: existing, error: queryErr } = await rdb.from('user_progress')
+            .select('user_id')
+            .eq('user_id', userId);
+
+        if (queryErr) throw queryErr;
+
+        if (existing && existing.length > 0) {
+            // 更新
+            const { error } = await rdb.from('user_progress')
+                .update({ state: state, sync_updated_at: now })
+                .eq('user_id', userId);
+            if (error) throw error;
+        } else {
+            // 插入
+            const { error } = await rdb.from('user_progress')
+                .insert({ user_id: userId, state: state, sync_updated_at: now });
+            if (error) throw error;
+        }
+
+        console.log('[CloudBase同步] 已推送到云端');
+        localStorage.setItem('wp_sync_updated', String(now));
+        lastSyncTime = now;
+        isSyncing = false;
+    } catch (e) {
+        console.warn('[CloudBase同步] 推送失败:', e);
+        isSyncing = false;
+    }
+}
+
+function scheduleCloudPush() {
+    if (isSyncing) return;
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { pushToCloudBase(); }, 3000);
+}
+
+// 包装 saveState
+const _originalSaveState = saveState;
+saveState = function() {
+    _originalSaveState();
+    scheduleCloudPush();
+};
+
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (initCloudBase()) {
+            pullFromCloudBase();
+        }
+    }, 800);
+});
+
+window.addEventListener('beforeunload', () => {
+    if (lastSyncTime > 0 && Date.now() - lastSyncTime > 5000) {
+        pushToCloudBase();
+    }
+});
 state = loadState();
 autoFixDuplicateUnits();
 saveState();
